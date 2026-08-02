@@ -1,0 +1,12 @@
+{
+  "hud.shortcut-hint": "传送书签：{{open}} 打开传送手册；{{create}} 记录当前位置。快捷键可以在设置中修改。",
+  "notice.open-menu": "传送手册将在阶段 0 运行时探针验证通过后加入。",
+  "notice.create-bookmark": "书签创建将在阶段 0 运行时探针验证通过后加入。",
+  "config.section.shortcuts": "快捷键",
+  "config.open-menu.name": "打开传送手册",
+  "config.open-menu.tooltip": "打开或关闭传送书签界面。",
+  "config.create-bookmark.name": "记录当前位置",
+  "config.create-bookmark.tooltip": "在玩家当前格子创建个人传送书签。",
+  "config.show-hint.name": "显示快捷键提示",
+  "config.show-hint.tooltip": "每次载入存档后提示一次当前的手册与记录快捷键。"
+}

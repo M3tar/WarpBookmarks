@@ -1,0 +1,15 @@
+{
+  "Name": "Warp Bookmarks",
+  "Author": "Mercury",
+  "Version": "0.0.4",
+  "Description": "Phase-0 foundation for personal teleport bookmarks with strict destination validation.",
+  "UniqueID": "Mercury.WarpBookmarks",
+  "EntryDll": "WarpBookmarks.dll",
+  "MinimumApiVersion": "4.5.2",
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
+    }
+  ]
+}

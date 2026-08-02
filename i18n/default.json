@@ -1,0 +1,12 @@
+{
+  "hud.shortcut-hint": "Warp Bookmarks: {{open}} opens the travel book; {{create}} records your current location. Shortcuts can be changed in settings.",
+  "notice.open-menu": "The travel book UI will be added after the phase-0 runtime probes are verified.",
+  "notice.create-bookmark": "Bookmark creation will be added after the phase-0 runtime probes are verified.",
+  "config.section.shortcuts": "Shortcuts",
+  "config.open-menu.name": "Open travel book",
+  "config.open-menu.tooltip": "Open or close the Warp Bookmarks menu.",
+  "config.create-bookmark.name": "Record current location",
+  "config.create-bookmark.tooltip": "Create a personal bookmark at your current tile.",
+  "config.show-hint.name": "Show shortcut reminder",
+  "config.show-hint.tooltip": "Show the current menu and bookmark shortcuts once after loading a save."
+}
