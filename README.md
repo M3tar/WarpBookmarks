@@ -2,7 +2,7 @@
 
 一个面向《星露谷物语》1.6 的 SMAPI Mod：玩家可以保存自己常去的位置，通过可搜索的“传送手册”快速回家、返回上一个位置、使用自定义书签或输入地图坐标传送。
 
-当前版本为 `0.1.1` 可玩竖切：已经可以记录个人书签、打开传送手册、返回住宅、使用原版默认地点、返回上一个位置并安全传送。精准坐标后端可通过 `wb_warp <location> <x> <y>` 使用，图形输入界面将在下一批实现。
+当前版本为 `0.1.2` 可玩竖切：已经可以记录个人书签、打开传送手册、返回住宅、使用原版默认地点、返回上一个位置并安全传送。精准坐标后端可通过 `wb_warp <location> <x> <y>` 使用，图形输入界面将在下一批实现。
 
 默认快捷键：`K` 打开/关闭手册，`Shift + K` 记录当前位置；两者都可在 Generic Mod Config Menu 或 `config.json` 中修改。
 
@@ -28,7 +28,7 @@
 - [产品决策](docs/DECISIONS.md)
 - [待确认问题](docs/OPEN_QUESTIONS.md)
 - [阶段 0 Windows 验证](docs/PHASE0_VALIDATION.md)
-- [0.1.1 Windows 单次测试](docs/WINDOWS_TEST_0.1.1.md)
+- [0.1.2 Windows UI 复核](docs/WINDOWS_UI_TEST_0.1.2.md)
 - [当前状态](docs/STATUS.md)
 
 ## 暂定项目标识

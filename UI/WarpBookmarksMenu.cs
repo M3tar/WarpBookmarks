@@ -10,7 +10,13 @@ namespace WarpBookmarks.UI;
 /// <summary>A compact parchment travel book with a scrollable destination list and details panel.</summary>
 internal sealed class WarpBookmarksMenu : IClickableMenu
 {
+    private const int MenuWidth = 960;
+    private const int MenuHeight = 540;
     private const int RowHeight = 48;
+    private const int ActionPadding = 18;
+    private const int ActionGap = 12;
+    private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
+
     private readonly List<WarpDestination> destinations;
     private readonly Action<WarpDestination> warp;
     private readonly Action<WarpDestination, bool> setFavorite;
@@ -20,16 +26,18 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private readonly Func<WarpDestination?> recordCurrent;
     private readonly Func<string, string> translate;
     private readonly string shortcutText;
+    private readonly Texture2D parchmentTexture;
     private int selectedIndex;
     private int scrollOffset;
     private string? pendingRemoveId;
 
     private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, this.height - 174);
     private Rectangle DetailArea => new(this.xPositionOnScreen + 478, this.yPositionOnScreen + 86, this.width - 514, this.height - 174);
-    private Rectangle WarpButton => new(this.DetailArea.X + 18, this.DetailArea.Bottom - 62, 150, 44);
-    private Rectangle FavoriteButton => new(this.DetailArea.X + 180, this.DetailArea.Bottom - 62, 150, 44);
-    private Rectangle RemoveButton => new(this.DetailArea.X + 342, this.DetailArea.Bottom - 62, 150, 44);
-    private Rectangle EditButton => new(this.DetailArea.X + 18, this.DetailArea.Bottom - 116, 150, 44);
+    private int ActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap) / 2;
+    private Rectangle WarpButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 0);
+    private Rectangle FavoriteButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 0);
+    private Rectangle EditButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 1);
+    private Rectangle RemoveButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 1);
     private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 210, 44);
     private Rectangle RestoreButton => new(this.xPositionOnScreen + 258, this.yPositionOnScreen + this.height - 70, 210, 44);
 
@@ -45,11 +53,11 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         string shortcutText
     )
         : base(
-            Math.Max(16, (Game1.uiViewport.Width - Math.Min(960, Game1.uiViewport.Width - 32)) / 2),
-            Math.Max(16, (Game1.uiViewport.Height - Math.Min(600, Game1.uiViewport.Height - 32)) / 2),
-            Math.Min(960, Game1.uiViewport.Width - 32),
-            Math.Min(600, Game1.uiViewport.Height - 32),
-            true
+            (Game1.uiViewport.Width - MenuWidth) / 2,
+            (Game1.uiViewport.Height - MenuHeight) / 2,
+            MenuWidth,
+            MenuHeight,
+            showUpperRightCloseButton: true
         )
     {
         this.destinations = destinations.ToList();
@@ -61,6 +69,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.recordCurrent = recordCurrent;
         this.translate = translate;
         this.shortcutText = shortcutText;
+        this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -184,8 +193,12 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
     public override void draw(SpriteBatch b)
     {
-        this.drawBackground(b);
-        IClickableMenu.drawTextureBox(b, this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height, Color.White);
+        b.Draw(
+            this.parchmentTexture,
+            new Rectangle(this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height),
+            ParchmentSourceRect,
+            Color.White
+        );
         b.DrawString(Game1.dialogueFont, this.translate("menu.title"), new Vector2(this.xPositionOnScreen + 36, this.yPositionOnScreen + 24), Game1.textColor);
         b.DrawString(Game1.smallFont, this.translate("menu.list-title"), new Vector2(this.ListArea.X, this.ListArea.Y - 30), Game1.textColor);
 
@@ -222,7 +235,6 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private void DrawDetails(SpriteBatch b)
     {
         Rectangle area = this.DetailArea;
-        b.Draw(Game1.staminaRect, area, new Color(120, 78, 48) * 0.08f);
         WarpDestination? selected = this.Selected;
         if (selected is null)
         {
@@ -243,7 +255,9 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         bool canFavorite = selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default;
         this.DrawButton(b, this.FavoriteButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), canFavorite);
         string removeText = this.pendingRemoveId == selected.Id
-            ? this.translate("menu.confirm")
+            ? selected.Kind == WarpDestinationKind.Default
+                ? this.translate("menu.confirm-hide")
+                : this.translate("menu.confirm-delete")
             : selected.Kind == WarpDestinationKind.Default ? this.translate("menu.hide") : this.translate("menu.delete");
         this.DrawButton(b, this.RemoveButton, removeText, selected.CanRemove);
     }
@@ -256,9 +270,21 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
     private void DrawButton(SpriteBatch b, Rectangle bounds, string label, bool enabled)
     {
-        IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, enabled ? Color.White : Color.Gray * 0.65f);
+        Color tint = !enabled
+            ? Color.Gray * 0.65f
+            : bounds.Contains(Game1.getMousePosition(true))
+                ? Color.Wheat
+                : Color.White;
+        IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, tint);
         Vector2 size = Game1.smallFont.MeasureString(label);
         b.DrawString(Game1.smallFont, label, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), enabled ? Game1.textColor : Color.DarkGray);
+    }
+
+    private Rectangle GetActionButtonBounds(int column, int rowFromBottom)
+    {
+        int x = this.DetailArea.X + ActionPadding + column * (this.ActionButtonWidth + ActionGap);
+        int y = this.DetailArea.Bottom - 62 - rowFromBottom * 54;
+        return new Rectangle(x, y, this.ActionButtonWidth, 44);
     }
 
     private void EnsureSelectedVisible()
