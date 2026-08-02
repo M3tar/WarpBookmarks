@@ -5,6 +5,9 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.Menus;
+using WarpBookmarks.Models;
+using WarpBookmarks.UI;
 
 namespace WarpBookmarks;
 
@@ -15,11 +18,18 @@ public sealed class ModEntry : Mod
 
     private ModConfig? config;
     private bool showedShortcutHint;
+    private BookmarkRepository? repository;
+    private DestinationCatalog? catalog;
+    private WarpService? warpService;
 
     public override void Entry(IModHelper helper)
     {
         this.config = helper.ReadConfig<ModConfig>();
         this.MigrateConfig();
+        this.repository = new BookmarkRepository(this.ModManifest, this.Monitor);
+        HomeLocationResolver homeResolver = new(this.Monitor);
+        this.catalog = new DestinationCatalog(this.repository, homeResolver, this.Translate);
+        this.warpService = new WarpService(this.repository, this.Monitor, this.Translate);
         this.Monitor.Log(
             $"Active shortcuts: open={this.config.OpenMenuKey}; create={this.config.CreateBookmarkKey}.",
             LogLevel.Info
@@ -45,9 +55,19 @@ public sealed class ModEntry : Mod
             "Read/write the current player's phase-0 persistence probe. Usage: wb_probe_data [value|clear]",
             this.OnProbeDataCommand
         );
+        helper.ConsoleCommands.Add(
+            "wb_warp",
+            "Safely warp to an exact tile. Usage: wb_warp <location> <x> <y>",
+            this.OnWarpCommand
+        );
+        helper.ConsoleCommands.Add(
+            "wb_dump_bookmarks",
+            "List the current player's bookmark names and coordinates.",
+            this.OnDumpBookmarksCommand
+        );
 
         this.Monitor.Log(
-            "Warp Bookmarks 0.0.4 phase-0 foundation loaded. Run wb_where after loading a save.",
+            $"Warp Bookmarks {this.ModManifest.Version} vertical slice loaded.",
             LogLevel.Info
         );
     }
@@ -162,12 +182,16 @@ public sealed class ModEntry : Mod
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
+        this.repository?.ResetCache();
+        this.warpService?.ClearPrevious();
         this.ShowShortcutHintIfNeeded();
     }
 
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
         this.showedShortcutHint = false;
+        this.repository?.ResetCache();
+        this.warpService?.ClearPrevious();
     }
 
     private void ShowShortcutHintIfNeeded()
@@ -186,24 +210,130 @@ public sealed class ModEntry : Mod
 
     private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)
     {
-        if (!Context.IsWorldReady || this.config is null || Game1.activeClickableMenu is not null)
+        if (!Context.IsWorldReady || this.config is null)
+            return;
+
+        if (Game1.activeClickableMenu is WarpBookmarksMenu)
+        {
+            if (this.config.OpenMenuKey.JustPressed())
+            {
+                this.Helper.Input.SuppressActiveKeybinds(this.config.OpenMenuKey);
+                Game1.exitActiveMenu();
+            }
+            return;
+        }
+        if (Game1.activeClickableMenu is not null)
             return;
 
         if (this.config.CreateBookmarkKey.JustPressed())
         {
             this.Helper.Input.SuppressActiveKeybinds(this.config.CreateBookmarkKey);
-            this.ShowPhaseZeroNotice("notice.create-bookmark");
+            this.CreateBookmarkAtCurrentLocation();
             return;
         }
 
         if (this.config.OpenMenuKey.JustPressed())
         {
             this.Helper.Input.SuppressActiveKeybinds(this.config.OpenMenuKey);
-            this.ShowPhaseZeroNotice("notice.open-menu");
+            this.OpenMenu();
         }
     }
 
-    private void ShowPhaseZeroNotice(string key)
+    private void OpenMenu()
+    {
+        if (this.config is null || this.catalog is null || this.repository is null || this.warpService is null)
+            return;
+        if (!LocationPolicy.CanUseTeleportNow(out string reasonKey))
+        {
+            this.ShowError(reasonKey);
+            return;
+        }
+
+        Game1.activeClickableMenu = new WarpBookmarksMenu(
+            this.catalog.Build(this.warpService.PreviousLocation),
+            destination => this.warpService.TryWarp(destination),
+            (destination, favorite) => this.repository.SetFavorite(destination, favorite),
+            this.RemoveDestination,
+            this.OpenRenameDialog,
+            this.RestoreDefaultLocations,
+            this.CreateBookmarkAtCurrentLocation,
+            this.Translate,
+            this.Helper.Translation.Get("menu.shortcuts", new
+            {
+                open = this.config.OpenMenuKey,
+                create = this.config.CreateBookmarkKey
+            })
+        );
+    }
+
+    private WarpDestination? CreateBookmarkAtCurrentLocation()
+    {
+        if (this.repository is null)
+            return null;
+        if (!LocationPolicy.CanUseTeleportNow(out string reasonKey))
+        {
+            this.ShowError(reasonKey);
+            return null;
+        }
+        if (LocationPolicy.IsRestricted(Game1.currentLocation))
+        {
+            this.ShowError("error.record-restricted");
+            return null;
+        }
+
+        string suggestedName = $"{Game1.currentLocation.DisplayName} ({Game1.player.TilePoint.X}, {Game1.player.TilePoint.Y})";
+        BookmarkRecord? bookmark = this.repository.AddCurrentLocation(suggestedName, out string? error);
+        if (bookmark is null)
+        {
+            this.ShowError(error == "limit" ? "error.bookmark-limit" : "error.bookmark-create");
+            return null;
+        }
+
+        Game1.playSound("newArtifact");
+        Game1.addHUDMessage(new HUDMessage(this.Helper.Translation.Get("hud.bookmark-created", new { name = bookmark.Name }), HUDMessage.newQuest_type));
+        return new WarpDestination
+        {
+            Id = bookmark.Id,
+            Name = bookmark.Name,
+            Location = bookmark.Location,
+            Kind = WarpDestinationKind.Bookmark,
+            IsFavorite = bookmark.IsFavorite
+        };
+    }
+
+    private void RemoveDestination(WarpDestination destination)
+    {
+        if (this.repository is null)
+            return;
+        if (destination.Kind == WarpDestinationKind.Bookmark)
+            this.repository.DeleteBookmark(destination.Id);
+        else if (destination.Kind == WarpDestinationKind.Default)
+            this.repository.HideDefault(destination.Id);
+    }
+
+    private void OpenRenameDialog(WarpDestination destination)
+    {
+        if (this.repository is null || destination.Kind != WarpDestinationKind.Bookmark)
+            return;
+
+        Game1.activeClickableMenu = new NamingMenu(
+            name =>
+            {
+                this.repository.RenameBookmark(destination.Id, name);
+                this.OpenMenu();
+            },
+            this.Helper.Translation.Get("rename.title"),
+            destination.Name
+        );
+    }
+
+    private void RestoreDefaultLocations()
+    {
+        this.repository?.RestoreDefaultLocations();
+        this.OpenMenu();
+    }
+
+    private void ShowError(string key)
     {
         Game1.addHUDMessage(new HUDMessage(this.Helper.Translation.Get(key), HUDMessage.error_type));
     }
@@ -228,4 +358,56 @@ public sealed class ModEntry : Mod
     {
         ApiValidationService.ProbePlayerData(this.Monitor, this.ModManifest, args);
     }
+
+    private void OnWarpCommand(string command, string[] args)
+    {
+        if (args.Length != 3 || !int.TryParse(args[1], out int x) || !int.TryParse(args[2], out int y))
+        {
+            this.Monitor.Log("Usage: wb_warp <location> <x> <y>", LogLevel.Warn);
+            return;
+        }
+        if (!Context.IsWorldReady || this.warpService is null)
+        {
+            this.Monitor.Log("Load a save before using wb_warp.", LogLevel.Warn);
+            return;
+        }
+
+        GameLocation? location = Game1.getLocationFromName(args[0]);
+        string displayName = location?.DisplayName ?? args[0];
+        this.warpService.TryWarp(new WarpDestination
+        {
+            Id = "Coordinate",
+            Name = $"{displayName} ({x}, {y})",
+            Kind = WarpDestinationKind.Coordinate,
+            Location = new LocationReference
+            {
+                LocationName = args[0],
+                DisplayName = displayName,
+                TileX = x,
+                TileY = y,
+                FacingDirection = 2
+            }
+        });
+    }
+
+    private void OnDumpBookmarksCommand(string command, string[] args)
+    {
+        if (!Context.IsWorldReady || this.repository is null)
+        {
+            this.Monitor.Log("Load a save before using wb_dump_bookmarks.", LogLevel.Warn);
+            return;
+        }
+
+        IReadOnlyList<BookmarkRecord> bookmarks = this.repository.GetData().Bookmarks;
+        this.Monitor.Log($"Current player has {bookmarks.Count} Warp Bookmarks:", LogLevel.Info);
+        foreach (BookmarkRecord bookmark in bookmarks)
+        {
+            this.Monitor.Log(
+                $"- {bookmark.Name}: {bookmark.Location.LocationName} ({bookmark.Location.TileX}, {bookmark.Location.TileY}) favorite={bookmark.IsFavorite}",
+                LogLevel.Info
+            );
+        }
+    }
+
+    private string Translate(string key) => this.Helper.Translation.Get(key);
 }

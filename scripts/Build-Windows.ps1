@@ -83,9 +83,6 @@ if ($Install) {
     }
 
     if (Test-Path $TargetPath) {
-        if (-not $UpdateExisting) {
-            throw "Target already exists. Use -UpdateExisting after verifying it is this mod."
-        }
         $InstalledManifestPath = Join-Path $TargetPath "manifest.json"
         if (-not (Test-Path $InstalledManifestPath)) {
             throw "Refusing to update a folder without manifest.json."
@@ -112,7 +109,7 @@ if ($Install) {
         New-Item -ItemType Directory -Path $TargetI18n | Out-Null
     }
     Get-ChildItem $SourceI18n -File | Copy-Item -Destination $TargetI18n -Force
-    Write-Host "Installed or updated phase-0 build at: $TargetPath"
+    Write-Host "Installed or updated Warp Bookmarks at: $TargetPath"
 }
 
-Write-Host "See docs\PHASE0_VALIDATION.md for in-game checks."
+Write-Host "See docs\WINDOWS_TEST_0.1.1.md for the single-session test."
