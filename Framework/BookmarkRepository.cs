@@ -53,6 +53,25 @@ internal sealed class BookmarkRepository
 
     public BookmarkRecord? AddCurrentLocation(string suggestedName, out string? error)
     {
+        string locationName = Game1.currentLocation.NameOrUniqueName;
+        if (string.IsNullOrWhiteSpace(locationName))
+        {
+            error = "location";
+            return null;
+        }
+
+        return this.AddLocation(new LocationReference
+        {
+            LocationName = locationName,
+            DisplayName = Game1.currentLocation.DisplayName,
+            TileX = Game1.player.TilePoint.X,
+            TileY = Game1.player.TilePoint.Y,
+            FacingDirection = Game1.player.FacingDirection
+        }, suggestedName, out error);
+    }
+
+    public BookmarkRecord? AddLocation(LocationReference location, string suggestedName, out string? error)
+    {
         error = null;
         PlayerBookmarkData data = this.GetData();
         if (data.Bookmarks.Count >= MaxBookmarks)
@@ -60,9 +79,7 @@ internal sealed class BookmarkRepository
             error = "limit";
             return null;
         }
-
-        string locationName = Game1.currentLocation.NameOrUniqueName;
-        if (string.IsNullOrWhiteSpace(locationName))
+        if (string.IsNullOrWhiteSpace(location.LocationName))
         {
             error = "location";
             return null;
@@ -72,14 +89,7 @@ internal sealed class BookmarkRepository
         BookmarkRecord bookmark = new()
         {
             Name = name,
-            Location = new LocationReference
-            {
-                LocationName = locationName,
-                DisplayName = Game1.currentLocation.DisplayName,
-                TileX = Game1.player.TilePoint.X,
-                TileY = Game1.player.TilePoint.Y,
-                FacingDirection = Game1.player.FacingDirection
-            }
+            Location = location
         };
         data.Bookmarks.Add(bookmark);
         this.Save();

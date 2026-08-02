@@ -22,22 +22,8 @@ internal sealed class WarpService
 
     public bool TryWarp(WarpDestination destination)
     {
-        if (!LocationPolicy.CanUseTeleportNow(out string reasonKey))
+        if (!this.TryValidate(destination, out GameLocation targetLocation, out Point safeTile, out string reasonKey))
             return this.Fail(reasonKey);
-
-        GameLocation? targetLocation = Game1.getLocationFromName(destination.Location.LocationName);
-        if (targetLocation is null)
-            return this.Fail("error.location-missing");
-        if (destination.Kind == WarpDestinationKind.Coordinate
-            && targetLocation != Game1.currentLocation
-            && !Game1.player.locationsVisited.Contains(targetLocation.Name))
-        {
-            return this.Fail("error.location-unvisited");
-        }
-        if (LocationPolicy.IsRestricted(targetLocation))
-            return this.Fail("error.location-restricted");
-        if (!SafeTileFinder.TryFind(targetLocation, new Point(destination.Location.TileX, destination.Location.TileY), out Point safeTile))
-            return this.Fail("error.no-safe-tile");
 
         LocationReference origin = new()
         {
@@ -69,6 +55,48 @@ internal sealed class WarpService
             this.monitor.Log($"Warp failed for '{destination.Name}' ({destination.Location.LocationName}). {ex}", LogLevel.Error);
             return this.Fail("error.warp-failed");
         }
+    }
+
+    public bool TryValidate(
+        WarpDestination destination,
+        out GameLocation targetLocation,
+        out Point safeTile,
+        out string reasonKey
+    )
+    {
+        targetLocation = null!;
+        safeTile = Point.Zero;
+        if (!LocationPolicy.CanUseTeleportNow(out reasonKey))
+            return false;
+
+        targetLocation = Game1.getLocationFromName(destination.Location.LocationName);
+        if (targetLocation is null)
+        {
+            reasonKey = "error.location-missing";
+            return false;
+        }
+        if (destination.Kind == WarpDestinationKind.Coordinate
+            && targetLocation != Game1.currentLocation
+            && !string.Equals(targetLocation.Name, "Farm", StringComparison.OrdinalIgnoreCase)
+            && !Game1.player.locationsVisited.Contains(targetLocation.Name)
+            && !Game1.player.locationsVisited.Contains(targetLocation.NameOrUniqueName))
+        {
+            reasonKey = "error.location-unvisited";
+            return false;
+        }
+        if (LocationPolicy.IsRestricted(targetLocation))
+        {
+            reasonKey = "error.location-restricted";
+            return false;
+        }
+        if (!SafeTileFinder.TryFind(targetLocation, new Point(destination.Location.TileX, destination.Location.TileY), out safeTile))
+        {
+            reasonKey = "error.no-safe-tile";
+            return false;
+        }
+
+        reasonKey = "";
+        return true;
     }
 
     public void ClearPrevious() => this.PreviousLocation = null;

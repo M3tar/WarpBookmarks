@@ -5,7 +5,6 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.Menus;
 using WarpBookmarks.Models;
 using WarpBookmarks.UI;
 
@@ -222,6 +221,16 @@ public sealed class ModEntry : Mod
             }
             return;
         }
+        if (Game1.activeClickableMenu is CoordinateWarpDialog)
+        {
+            if (this.config.OpenMenuKey.JustPressed())
+            {
+                this.Helper.Input.SuppressActiveKeybinds(this.config.OpenMenuKey);
+                Game1.exitActiveMenu();
+                this.OpenMenu();
+            }
+            return;
+        }
         if (Game1.activeClickableMenu is not null)
             return;
 
@@ -256,6 +265,7 @@ public sealed class ModEntry : Mod
             this.RemoveDestination,
             this.OpenRenameDialog,
             this.RestoreDefaultLocations,
+            this.OpenCoordinateDialog,
             this.CreateBookmarkAtCurrentLocation,
             this.Translate,
             this.Helper.Translation.Get("menu.shortcuts", new
@@ -316,14 +326,15 @@ public sealed class ModEntry : Mod
         if (this.repository is null || destination.Kind != WarpDestinationKind.Bookmark)
             return;
 
-        Game1.activeClickableMenu = new NamingMenu(
+        Game1.activeClickableMenu = new BookmarkRenameDialog(
+            destination.Name,
             name =>
             {
                 this.repository.RenameBookmark(destination.Id, name);
                 this.OpenMenu();
             },
-            this.Helper.Translation.Get("rename.title"),
-            destination.Name
+            this.OpenMenu,
+            this.Translate
         );
     }
 
@@ -331,6 +342,35 @@ public sealed class ModEntry : Mod
     {
         this.repository?.RestoreDefaultLocations();
         this.OpenMenu();
+    }
+
+    private void OpenCoordinateDialog()
+    {
+        if (this.warpService is null)
+            return;
+        Game1.activeClickableMenu = new CoordinateWarpDialog(
+            this.warpService,
+            this.Translate,
+            this.OpenMenu,
+            this.SaveCoordinateBookmark
+        );
+    }
+
+    private bool SaveCoordinateBookmark(WarpDestination destination)
+    {
+        if (this.repository is null)
+            return false;
+
+        BookmarkRecord? bookmark = this.repository.AddLocation(destination.Location, destination.Name, out string? error);
+        if (bookmark is null)
+        {
+            this.ShowError(error == "limit" ? "error.bookmark-limit" : "error.bookmark-create");
+            return false;
+        }
+
+        Game1.playSound("newArtifact");
+        Game1.addHUDMessage(new HUDMessage(this.Helper.Translation.Get("hud.bookmark-created", new { name = bookmark.Name }), HUDMessage.newQuest_type));
+        return true;
     }
 
     private void ShowError(string key)

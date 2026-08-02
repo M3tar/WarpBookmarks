@@ -17,16 +17,20 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private const int ActionGap = 12;
     private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
 
+    private readonly List<WarpDestination> allDestinations;
     private readonly List<WarpDestination> destinations;
     private readonly Action<WarpDestination> warp;
     private readonly Action<WarpDestination, bool> setFavorite;
     private readonly Action<WarpDestination> remove;
     private readonly Action<WarpDestination> edit;
     private readonly Action restoreDefaults;
+    private readonly Action openCoordinates;
     private readonly Func<WarpDestination?> recordCurrent;
     private readonly Func<string, string> translate;
     private readonly string shortcutText;
     private readonly Texture2D parchmentTexture;
+    private readonly TextBox searchBox;
+    private string previousSearch = "";
     private int selectedIndex;
     private int scrollOffset;
     private string? pendingRemoveId;
@@ -38,8 +42,10 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private Rectangle FavoriteButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 0);
     private Rectangle EditButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 1);
     private Rectangle RemoveButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 1);
-    private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 210, 44);
-    private Rectangle RestoreButton => new(this.xPositionOnScreen + 258, this.yPositionOnScreen + this.height - 70, 210, 44);
+    private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 180, 44);
+    private Rectangle CoordinateButton => new(this.xPositionOnScreen + 228, this.yPositionOnScreen + this.height - 70, 180, 44);
+    private Rectangle RestoreButton => new(this.xPositionOnScreen + 420, this.yPositionOnScreen + this.height - 70, 180, 44);
+    private Rectangle SearchArea => new(this.searchBox.X, this.searchBox.Y, this.searchBox.Width, 48);
 
     public WarpBookmarksMenu(
         IEnumerable<WarpDestination> destinations,
@@ -48,6 +54,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         Action<WarpDestination> remove,
         Action<WarpDestination> edit,
         Action restoreDefaults,
+        Action openCoordinates,
         Func<WarpDestination?> recordCurrent,
         Func<string, string> translate,
         string shortcutText
@@ -60,25 +67,52 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             showUpperRightCloseButton: true
         )
     {
-        this.destinations = destinations.ToList();
+        this.allDestinations = destinations.ToList();
+        this.destinations = new List<WarpDestination>(this.allDestinations);
         this.warp = warp;
         this.setFavorite = setFavorite;
         this.remove = remove;
         this.edit = edit;
         this.restoreDefaults = restoreDefaults;
+        this.openCoordinates = openCoordinates;
         this.recordCurrent = recordCurrent;
         this.translate = translate;
         this.shortcutText = shortcutText;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
+        Texture2D textBoxTexture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
+        this.searchBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        {
+            X = this.xPositionOnScreen + 594,
+            Y = this.yPositionOnScreen + 20,
+            Width = 260,
+            Selected = false
+        };
+        Game1.keyboardDispatcher.Subscriber = this.searchBox;
+    }
+
+    public override void update(GameTime time)
+    {
+        base.update(time);
+        this.searchBox.Update();
+        if (string.Equals(this.previousSearch, this.searchBox.Text, StringComparison.Ordinal))
+            return;
+
+        this.previousSearch = this.searchBox.Text;
+        this.ApplySearchFilter();
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
     {
-        if (this.upperRightCloseButton?.containsPoint(x, y) == true)
+        base.receiveLeftClick(x, y, playSound);
+        if (this.readyToClose() && this.upperRightCloseButton?.containsPoint(x, y) == true)
+            return;
+
+        if (this.SearchArea.Contains(x, y))
         {
-            this.exitThisMenu();
+            this.searchBox.Selected = true;
             return;
         }
+        this.searchBox.Selected = false;
 
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
         for (int row = 0; row < visibleRows; row++)
@@ -99,7 +133,10 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             WarpDestination? created = this.recordCurrent();
             if (created is not null)
             {
-                this.destinations.Add(created);
+                this.allDestinations.Add(created);
+                this.searchBox.Text = "";
+                this.previousSearch = "";
+                this.ApplySearchFilter();
                 this.selectedIndex = this.destinations.Count - 1;
                 this.EnsureSelectedVisible();
             }
@@ -108,6 +145,11 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (this.RestoreButton.Contains(x, y))
         {
             this.restoreDefaults();
+            return;
+        }
+        if (this.CoordinateButton.Contains(x, y))
+        {
+            this.openCoordinates();
             return;
         }
 
@@ -142,7 +184,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             }
 
             this.remove(selected);
-            this.destinations.RemoveAt(this.selectedIndex);
+            this.allDestinations.RemoveAll(item => item.Id == selected.Id && item.Kind == selected.Kind);
+            this.ApplySearchFilter();
             this.selectedIndex = Math.Clamp(this.selectedIndex, 0, Math.Max(0, this.destinations.Count - 1));
             this.pendingRemoveId = null;
             this.EnsureSelectedVisible();
@@ -165,6 +208,10 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             this.exitThisMenu();
             return;
         }
+
+        // Focused search TextBox owns cursor/editing keys through the keyboard dispatcher.
+        if (this.searchBox.Selected)
+            return;
         if (key is Keys.Down or Keys.S)
         {
             this.selectedIndex = Math.Min(this.destinations.Count - 1, this.selectedIndex + 1);
@@ -191,6 +238,13 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         base.receiveKeyPress(key);
     }
 
+    protected override void cleanupBeforeExit()
+    {
+        if (ReferenceEquals(Game1.keyboardDispatcher.Subscriber, this.searchBox))
+            Game1.keyboardDispatcher.Subscriber = null;
+        base.cleanupBeforeExit();
+    }
+
     public override void draw(SpriteBatch b)
     {
         b.Draw(
@@ -200,6 +254,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             Color.White
         );
         b.DrawString(Game1.dialogueFont, this.translate("menu.title"), new Vector2(this.xPositionOnScreen + 36, this.yPositionOnScreen + 24), Game1.textColor);
+        b.DrawString(Game1.smallFont, this.translate("menu.search"), new Vector2(this.searchBox.X - 70, this.searchBox.Y + 12), Game1.textColor);
+        this.searchBox.Draw(b);
         b.DrawString(Game1.smallFont, this.translate("menu.list-title"), new Vector2(this.ListArea.X, this.ListArea.Y - 30), Game1.textColor);
 
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
@@ -224,6 +280,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
         this.DrawDetails(b);
         this.DrawButton(b, this.RecordButton, this.translate("menu.record"), true);
+        this.DrawButton(b, this.CoordinateButton, this.translate("menu.coordinates-action"), true);
         this.DrawButton(b, this.RestoreButton, this.translate("menu.restore-defaults"), true);
         b.DrawString(Game1.smallFont, this.shortcutText, new Vector2(this.RestoreButton.Right + 18, this.RestoreButton.Y + 11), Color.DarkSlateGray);
         this.upperRightCloseButton?.draw(b);
@@ -294,5 +351,24 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             this.scrollOffset = this.selectedIndex;
         else if (this.selectedIndex >= this.scrollOffset + visibleRows)
             this.scrollOffset = this.selectedIndex - visibleRows + 1;
+    }
+
+    private void ApplySearchFilter()
+    {
+        string selectedId = this.Selected?.Id ?? "";
+        WarpDestinationKind? selectedKind = this.Selected?.Kind;
+        string query = this.searchBox.Text.Trim();
+        this.destinations.Clear();
+        this.destinations.AddRange(this.allDestinations.Where(destination =>
+            query.Length == 0
+            || destination.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || destination.Location.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || destination.Location.LocationName.Contains(query, StringComparison.OrdinalIgnoreCase)
+        ));
+
+        int previousSelection = this.destinations.FindIndex(item => item.Id == selectedId && item.Kind == selectedKind);
+        this.selectedIndex = previousSelection >= 0 ? previousSelection : 0;
+        this.scrollOffset = 0;
+        this.EnsureSelectedVisible();
     }
 }

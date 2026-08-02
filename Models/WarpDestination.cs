@@ -14,7 +14,7 @@ internal sealed class WarpDestination
 {
     public string Id { get; init; } = "";
 
-    public string Name { get; init; } = "";
+    public string Name { get; set; } = "";
 
     public LocationReference Location { get; init; } = new();
 
