@@ -35,6 +35,34 @@ internal static class DefaultLocationProvider
         }
     }
 
+    public static IEnumerable<WarpDestination> GetHidden(PlayerBookmarkData data, Func<string, string> translate)
+    {
+        foreach ((string id, string nameKey, string locationName, int x, int y) in GetDefinitions())
+        {
+            if (!data.HiddenDefaultLocationIds.Contains(id) || !HasVisited(locationName))
+                continue;
+
+            LocationReference location = id == "FarmTotem"
+                ? ResolveFarmTotemLocation()
+                : new LocationReference
+                {
+                    LocationName = locationName,
+                    DisplayName = translate(nameKey),
+                    TileX = x,
+                    TileY = y,
+                    FacingDirection = 2
+                };
+            yield return new WarpDestination
+            {
+                Id = id,
+                Name = translate(nameKey),
+                Location = location,
+                Kind = WarpDestinationKind.Default,
+                IsHidden = true
+            };
+        }
+    }
+
     public static LocationReference ResolveFarmTotemLocation()
     {
         GameLocation farm = Game1.getFarm();

@@ -22,6 +22,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private readonly Action<WarpDestination> warp;
     private readonly Action<WarpDestination, bool> setFavorite;
     private readonly Action<WarpDestination> remove;
+    private readonly Action<WarpDestination> restoreHidden;
     private readonly Action<WarpDestination> edit;
     private readonly Action restoreDefaults;
     private readonly Action openCoordinates;
@@ -34,17 +35,19 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private int selectedIndex;
     private int scrollOffset;
     private string? pendingRemoveId;
+    private DestinationCategory selectedCategory = DestinationCategory.All;
 
-    private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, this.height - 174);
+    private Rectangle CategoryArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, 36);
+    private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 132, 420, this.height - 220);
     private Rectangle DetailArea => new(this.xPositionOnScreen + 478, this.yPositionOnScreen + 86, this.width - 514, this.height - 174);
     private int ActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap) / 2;
     private Rectangle WarpButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 0);
     private Rectangle FavoriteButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 0);
     private Rectangle EditButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 1);
     private Rectangle RemoveButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 1);
-    private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 180, 44);
-    private Rectangle CoordinateButton => new(this.xPositionOnScreen + 228, this.yPositionOnScreen + this.height - 70, 180, 44);
-    private Rectangle RestoreButton => new(this.xPositionOnScreen + 420, this.yPositionOnScreen + this.height - 70, 180, 44);
+    private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 170, 44);
+    private Rectangle CoordinateButton => new(this.xPositionOnScreen + 218, this.yPositionOnScreen + this.height - 70, 210, 44);
+    private Rectangle RestoreButton => new(this.xPositionOnScreen + 440, this.yPositionOnScreen + this.height - 70, 180, 44);
     private Rectangle SearchArea => new(this.searchBox.X, this.searchBox.Y, this.searchBox.Width, 48);
 
     public WarpBookmarksMenu(
@@ -52,6 +55,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         Action<WarpDestination> warp,
         Action<WarpDestination, bool> setFavorite,
         Action<WarpDestination> remove,
+        Action<WarpDestination> restoreHidden,
         Action<WarpDestination> edit,
         Action restoreDefaults,
         Action openCoordinates,
@@ -72,6 +76,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.warp = warp;
         this.setFavorite = setFavorite;
         this.remove = remove;
+        this.restoreHidden = restoreHidden;
         this.edit = edit;
         this.restoreDefaults = restoreDefaults;
         this.openCoordinates = openCoordinates;
@@ -88,6 +93,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             Selected = false
         };
         Game1.keyboardDispatcher.Subscriber = this.searchBox;
+        this.ApplySearchFilter();
     }
 
     public override void update(GameTime time)
@@ -114,6 +120,18 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         }
         this.searchBox.Selected = false;
 
+        for (int categoryIndex = 0; categoryIndex < 5; categoryIndex++)
+        {
+            Rectangle bounds = this.GetCategoryBounds(categoryIndex);
+            if (!bounds.Contains(x, y))
+                continue;
+            this.selectedCategory = (DestinationCategory)categoryIndex;
+            this.pendingRemoveId = null;
+            this.ApplySearchFilter();
+            Game1.playSound("smallSelect");
+            return;
+        }
+
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
         for (int row = 0; row < visibleRows; row++)
         {
@@ -136,6 +154,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                 this.allDestinations.Add(created);
                 this.searchBox.Text = "";
                 this.previousSearch = "";
+                this.selectedCategory = DestinationCategory.Bookmarks;
                 this.ApplySearchFilter();
                 this.selectedIndex = this.destinations.Count - 1;
                 this.EnsureSelectedVisible();
@@ -157,7 +176,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (selected is null)
             return;
 
-        if (this.WarpButton.Contains(x, y))
+        if (this.WarpButton.Contains(x, y) && selected.CanWarp)
         {
             this.warp(selected);
             return;
@@ -167,15 +186,24 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             this.edit(selected);
             return;
         }
-        if (this.FavoriteButton.Contains(x, y) && selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default)
+        if (this.FavoriteButton.Contains(x, y)
+            && !selected.IsHidden
+            && (selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default))
         {
             selected.IsFavorite = !selected.IsFavorite;
             this.setFavorite(selected, selected.IsFavorite);
+            this.ApplySearchFilter();
             Game1.playSound("drumkit6");
             return;
         }
         if (this.RemoveButton.Contains(x, y) && selected.CanRemove)
         {
+            if (selected.IsHidden && selected.Kind == WarpDestinationKind.Default)
+            {
+                this.restoreHidden(selected);
+                Game1.playSound("smallSelect");
+                return;
+            }
             if (this.pendingRemoveId != selected.Id)
             {
                 this.pendingRemoveId = selected.Id;
@@ -184,6 +212,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             }
 
             this.remove(selected);
+            if (selected.Kind == WarpDestinationKind.Default)
+                return;
             this.allDestinations.RemoveAll(item => item.Id == selected.Id && item.Kind == selected.Kind);
             this.ApplySearchFilter();
             this.selectedIndex = Math.Clamp(this.selectedIndex, 0, Math.Max(0, this.destinations.Count - 1));
@@ -212,6 +242,16 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         // Focused search TextBox owns cursor/editing keys through the keyboard dispatcher.
         if (this.searchBox.Selected)
             return;
+        if (key == Keys.Left)
+        {
+            this.MoveCategory(-1);
+            return;
+        }
+        if (key == Keys.Right)
+        {
+            this.MoveCategory(1);
+            return;
+        }
         if (key is Keys.Down or Keys.S)
         {
             this.selectedIndex = Math.Min(this.destinations.Count - 1, this.selectedIndex + 1);
@@ -224,12 +264,12 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             this.EnsureSelectedVisible();
             return;
         }
-        if (key is Keys.Enter && this.Selected is not null)
+        if (key is Keys.Enter && this.Selected?.CanWarp == true)
         {
             this.warp(this.Selected);
             return;
         }
-        if (key is Keys.Delete && this.Selected?.CanRemove == true)
+        if (key is Keys.Delete && this.Selected?.CanRemove == true && !this.Selected.IsHidden)
         {
             this.pendingRemoveId = this.Selected.Id;
             Game1.addHUDMessage(new HUDMessage(this.translate("hud.remove-confirm"), HUDMessage.error_type));
@@ -256,7 +296,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         b.DrawString(Game1.dialogueFont, this.translate("menu.title"), new Vector2(this.xPositionOnScreen + 36, this.yPositionOnScreen + 24), Game1.textColor);
         b.DrawString(Game1.smallFont, this.translate("menu.search"), new Vector2(this.searchBox.X - 70, this.searchBox.Y + 12), Game1.textColor);
         this.searchBox.Draw(b);
-        b.DrawString(Game1.smallFont, this.translate("menu.list-title"), new Vector2(this.ListArea.X, this.ListArea.Y - 30), Game1.textColor);
+        this.DrawCategories(b);
 
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
         for (int row = 0; row < visibleRows; row++)
@@ -307,11 +347,14 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.DrawDetailLine(b, "menu.coordinates", $"{selected.Location.TileX}, {selected.Location.TileY}", area.X + 18, ref y);
         this.DrawDetailLine(b, "menu.type", this.translate($"kind.{selected.Kind.ToString().ToLowerInvariant()}"), area.X + 18, ref y);
 
-        this.DrawButton(b, this.WarpButton, this.translate("menu.warp"), true);
+        this.DrawButton(b, this.WarpButton, this.translate("menu.warp"), selected.CanWarp);
         this.DrawButton(b, this.EditButton, this.translate("menu.rename"), selected.Kind == WarpDestinationKind.Bookmark);
-        bool canFavorite = selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default;
+        bool canFavorite = !selected.IsHidden
+            && (selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default);
         this.DrawButton(b, this.FavoriteButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), canFavorite);
-        string removeText = this.pendingRemoveId == selected.Id
+        string removeText = selected.IsHidden
+            ? this.translate("menu.restore")
+            : this.pendingRemoveId == selected.Id
             ? selected.Kind == WarpDestinationKind.Default
                 ? this.translate("menu.confirm-hide")
                 : this.translate("menu.confirm-delete")
@@ -360,15 +403,73 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         string query = this.searchBox.Text.Trim();
         this.destinations.Clear();
         this.destinations.AddRange(this.allDestinations.Where(destination =>
-            query.Length == 0
-            || destination.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-            || destination.Location.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-            || destination.Location.LocationName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            this.MatchesCategory(destination)
+            && (query.Length == 0
+                || destination.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                || destination.Location.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                || destination.Location.LocationName.Contains(query, StringComparison.OrdinalIgnoreCase))
         ));
 
         int previousSelection = this.destinations.FindIndex(item => item.Id == selectedId && item.Kind == selectedKind);
         this.selectedIndex = previousSelection >= 0 ? previousSelection : 0;
         this.scrollOffset = 0;
         this.EnsureSelectedVisible();
+    }
+
+    private bool MatchesCategory(WarpDestination destination)
+    {
+        return this.selectedCategory switch
+        {
+            DestinationCategory.Favorites => destination.IsFavorite,
+            DestinationCategory.Bookmarks => destination.Kind == WarpDestinationKind.Bookmark,
+            DestinationCategory.Defaults => destination.Kind == WarpDestinationKind.Default && !destination.IsHidden,
+            DestinationCategory.Hidden => destination.IsHidden,
+            _ => !destination.IsHidden
+        };
+    }
+
+    private void DrawCategories(SpriteBatch b)
+    {
+        for (int categoryIndex = 0; categoryIndex < 5; categoryIndex++)
+        {
+            DestinationCategory category = (DestinationCategory)categoryIndex;
+            Rectangle bounds = this.GetCategoryBounds(categoryIndex);
+            bool selected = category == this.selectedCategory;
+            Color tint = selected
+                ? new Color(196, 135, 70) * 0.55f
+                : bounds.Contains(Game1.getMousePosition(true))
+                    ? new Color(222, 184, 120) * 0.4f
+                    : new Color(120, 78, 48) * 0.12f;
+            b.Draw(Game1.staminaRect, bounds, tint);
+            string label = this.translate($"category.{category.ToString().ToLowerInvariant()}");
+            Vector2 size = Game1.smallFont.MeasureString(label);
+            b.DrawString(Game1.smallFont, label, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), Game1.textColor);
+        }
+    }
+
+    private Rectangle GetCategoryBounds(int index)
+    {
+        const int gap = 6;
+        int width = (this.CategoryArea.Width - gap * 4) / 5;
+        return new Rectangle(this.CategoryArea.X + index * (width + gap), this.CategoryArea.Y, width, this.CategoryArea.Height);
+    }
+
+    private void MoveCategory(int direction)
+    {
+        int next = Math.Clamp((int)this.selectedCategory + direction, 0, 4);
+        if (next == (int)this.selectedCategory)
+            return;
+        this.selectedCategory = (DestinationCategory)next;
+        this.ApplySearchFilter();
+        Game1.playSound("smallSelect");
+    }
+
+    private enum DestinationCategory
+    {
+        All,
+        Favorites,
+        Bookmarks,
+        Defaults,
+        Hidden
     }
 }

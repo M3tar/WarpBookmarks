@@ -53,6 +53,7 @@ internal sealed class DestinationCatalog
                 Kind = WarpDestinationKind.Bookmark,
                 IsFavorite = bookmark.IsFavorite
             }));
+        destinations.AddRange(DefaultLocationProvider.GetHidden(data, this.translate));
         return destinations;
     }
 }

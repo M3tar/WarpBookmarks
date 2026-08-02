@@ -263,6 +263,7 @@ public sealed class ModEntry : Mod
             destination => this.warpService.TryWarp(destination),
             (destination, favorite) => this.repository.SetFavorite(destination, favorite),
             this.RemoveDestination,
+            this.RestoreHiddenDestination,
             this.OpenRenameDialog,
             this.RestoreDefaultLocations,
             this.OpenCoordinateDialog,
@@ -318,7 +319,10 @@ public sealed class ModEntry : Mod
         if (destination.Kind == WarpDestinationKind.Bookmark)
             this.repository.DeleteBookmark(destination.Id);
         else if (destination.Kind == WarpDestinationKind.Default)
+        {
             this.repository.HideDefault(destination.Id);
+            this.OpenMenu();
+        }
     }
 
     private void OpenRenameDialog(WarpDestination destination)
@@ -342,6 +346,15 @@ public sealed class ModEntry : Mod
     {
         this.repository?.RestoreDefaultLocations();
         this.OpenMenu();
+    }
+
+    private void RestoreHiddenDestination(WarpDestination destination)
+    {
+        if (destination.Kind == WarpDestinationKind.Default)
+        {
+            this.repository?.RestoreDefaultLocation(destination.Id);
+            this.OpenMenu();
+        }
     }
 
     private void OpenCoordinateDialog()

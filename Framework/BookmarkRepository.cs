@@ -153,6 +153,13 @@ internal sealed class BookmarkRepository
         this.Save();
     }
 
+    public void RestoreDefaultLocation(string id)
+    {
+        PlayerBookmarkData data = this.GetData();
+        if (data.HiddenDefaultLocationIds.Remove(id))
+            this.Save();
+    }
+
     public void MarkUsed(string bookmarkId)
     {
         BookmarkRecord? bookmark = this.GetData().Bookmarks.FirstOrDefault(item => item.Id == bookmarkId);

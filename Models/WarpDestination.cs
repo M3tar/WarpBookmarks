@@ -22,5 +22,9 @@ internal sealed class WarpDestination
 
     public bool IsFavorite { get; set; }
 
+    public bool IsHidden { get; init; }
+
     public bool CanRemove => this.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default;
+
+    public bool CanWarp => !this.IsHidden;
 }
