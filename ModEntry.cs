@@ -20,6 +20,7 @@ public sealed class ModEntry : Mod
     private BookmarkRepository? repository;
     private DestinationCatalog? catalog;
     private WarpService? warpService;
+    private DestinationCategory lastMenuCategory = DestinationCategory.Common;
 
     public override void Entry(IModHelper helper)
     {
@@ -181,6 +182,7 @@ public sealed class ModEntry : Mod
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
+        this.lastMenuCategory = DestinationCategory.Common;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
         this.ShowShortcutHintIfNeeded();
@@ -189,6 +191,7 @@ public sealed class ModEntry : Mod
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
         this.showedShortcutHint = false;
+        this.lastMenuCategory = DestinationCategory.Common;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
     }
@@ -267,7 +270,9 @@ public sealed class ModEntry : Mod
             this.OpenRenameDialog,
             this.RestoreDefaultLocations,
             this.OpenCoordinateDialog,
-            this.CreateBookmarkAtCurrentLocation,
+            this.OpenCreateCurrentBookmarkDialog,
+            this.lastMenuCategory,
+            category => this.lastMenuCategory = category,
             this.Translate,
             this.Helper.Translation.Get("menu.shortcuts", new
             {
@@ -310,6 +315,54 @@ public sealed class ModEntry : Mod
             Kind = WarpDestinationKind.Bookmark,
             IsFavorite = bookmark.IsFavorite
         };
+    }
+
+    private void OpenCreateCurrentBookmarkDialog()
+    {
+        if (!this.TryCaptureCurrentLocation(out LocationReference location, out string suggestedName))
+            return;
+
+        Game1.activeClickableMenu = new BookmarkCreateDialog(
+            location,
+            suggestedName,
+            name => this.SaveNamedBookmark(location, name),
+            this.OpenMenu,
+            this.Translate
+        );
+    }
+
+    private bool TryCaptureCurrentLocation(out LocationReference location, out string suggestedName)
+    {
+        location = new LocationReference();
+        suggestedName = "";
+        if (!LocationPolicy.CanUseTeleportNow(out string reasonKey))
+        {
+            this.ShowError(reasonKey);
+            return false;
+        }
+        if (LocationPolicy.IsRestricted(Game1.currentLocation))
+        {
+            this.ShowError("error.record-restricted");
+            return false;
+        }
+
+        string locationName = Game1.currentLocation.NameOrUniqueName;
+        if (string.IsNullOrWhiteSpace(locationName))
+        {
+            this.ShowError("error.bookmark-create");
+            return false;
+        }
+
+        location = new LocationReference
+        {
+            LocationName = locationName,
+            DisplayName = Game1.currentLocation.DisplayName,
+            TileX = Game1.player.TilePoint.X,
+            TileY = Game1.player.TilePoint.Y,
+            FacingDirection = Game1.player.FacingDirection
+        };
+        suggestedName = $"{location.DisplayName} ({location.TileX}, {location.TileY})";
+        return true;
     }
 
     private void RemoveDestination(WarpDestination destination)
@@ -365,25 +418,46 @@ public sealed class ModEntry : Mod
             this.warpService,
             this.Translate,
             this.OpenMenu,
-            this.SaveCoordinateBookmark
+            this.OpenCreateCoordinateBookmarkDialog
         );
     }
 
-    private bool SaveCoordinateBookmark(WarpDestination destination)
+    private void OpenCreateCoordinateBookmarkDialog(WarpDestination destination)
+    {
+        LocationReference location = new()
+        {
+            LocationName = destination.Location.LocationName,
+            DisplayName = destination.Location.DisplayName,
+            TileX = destination.Location.TileX,
+            TileY = destination.Location.TileY,
+            FacingDirection = destination.Location.FacingDirection
+        };
+        Game1.activeClickableMenu = new BookmarkCreateDialog(
+            location,
+            destination.Name,
+            name => this.SaveNamedBookmark(location, name),
+            this.OpenCoordinateDialog,
+            this.Translate
+        );
+    }
+
+    private void SaveNamedBookmark(LocationReference location, string name)
     {
         if (this.repository is null)
-            return false;
+            return;
 
-        BookmarkRecord? bookmark = this.repository.AddLocation(destination.Location, destination.Name, out string? error);
+        BookmarkRecord? bookmark = this.repository.AddLocation(location, name, out string? error);
         if (bookmark is null)
         {
             this.ShowError(error == "limit" ? "error.bookmark-limit" : "error.bookmark-create");
-            return false;
+            this.OpenMenu();
+            return;
         }
 
+        this.lastMenuCategory = DestinationCategory.Bookmarks;
         Game1.playSound("newArtifact");
         Game1.addHUDMessage(new HUDMessage(this.Helper.Translation.Get("hud.bookmark-created", new { name = bookmark.Name }), HUDMessage.newQuest_type));
-        return true;
+        this.OpenMenu();
     }
 
     private void ShowError(string key)

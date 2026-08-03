@@ -1,7 +1,7 @@
 {
   "Name": "Warp Bookmarks",
   "Author": "Mercury",
-  "Version": "0.3.0",
+  "Version": "0.4.0",
   "Description": "Personal teleport bookmarks, safe home travel, standard destinations, and quick return.",
   "UniqueID": "Mercury.WarpBookmarks",
   "EntryDll": "WarpBookmarks.dll",

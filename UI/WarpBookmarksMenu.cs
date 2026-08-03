@@ -26,7 +26,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private readonly Action<WarpDestination> edit;
     private readonly Action restoreDefaults;
     private readonly Action openCoordinates;
-    private readonly Func<WarpDestination?> recordCurrent;
+    private readonly Action recordCurrent;
+    private readonly Action<DestinationCategory> categoryChanged;
     private readonly Func<string, string> translate;
     private readonly string shortcutText;
     private readonly Texture2D parchmentTexture;
@@ -35,7 +36,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private int selectedIndex;
     private int scrollOffset;
     private string? pendingRemoveId;
-    private DestinationCategory selectedCategory = DestinationCategory.All;
+    private DestinationCategory selectedCategory;
 
     private Rectangle CategoryArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, 36);
     private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 132, 420, this.height - 220);
@@ -59,7 +60,9 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         Action<WarpDestination> edit,
         Action restoreDefaults,
         Action openCoordinates,
-        Func<WarpDestination?> recordCurrent,
+        Action recordCurrent,
+        DestinationCategory initialCategory,
+        Action<DestinationCategory> categoryChanged,
         Func<string, string> translate,
         string shortcutText
     )
@@ -81,6 +84,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.restoreDefaults = restoreDefaults;
         this.openCoordinates = openCoordinates;
         this.recordCurrent = recordCurrent;
+        this.selectedCategory = initialCategory;
+        this.categoryChanged = categoryChanged;
         this.translate = translate;
         this.shortcutText = shortcutText;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
@@ -126,6 +131,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             if (!bounds.Contains(x, y))
                 continue;
             this.selectedCategory = (DestinationCategory)categoryIndex;
+            this.categoryChanged(this.selectedCategory);
             this.pendingRemoveId = null;
             this.ApplySearchFilter();
             Game1.playSound("smallSelect");
@@ -148,17 +154,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
         if (this.RecordButton.Contains(x, y))
         {
-            WarpDestination? created = this.recordCurrent();
-            if (created is not null)
-            {
-                this.allDestinations.Add(created);
-                this.searchBox.Text = "";
-                this.previousSearch = "";
-                this.selectedCategory = DestinationCategory.Bookmarks;
-                this.ApplySearchFilter();
-                this.selectedIndex = this.destinations.Count - 1;
-                this.EnsureSelectedVisible();
-            }
+            this.recordCurrent();
             return;
         }
         if (this.RestoreButton.Contains(x, y))
@@ -420,7 +416,9 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     {
         return this.selectedCategory switch
         {
-            DestinationCategory.Favorites => destination.IsFavorite,
+            DestinationCategory.Common => !destination.IsHidden
+                && (destination.Kind is WarpDestinationKind.Home or WarpDestinationKind.Previous
+                    || destination.IsFavorite),
             DestinationCategory.Bookmarks => destination.Kind == WarpDestinationKind.Bookmark,
             DestinationCategory.Defaults => destination.Kind == WarpDestinationKind.Default && !destination.IsHidden,
             DestinationCategory.Hidden => destination.IsHidden,
@@ -460,16 +458,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (next == (int)this.selectedCategory)
             return;
         this.selectedCategory = (DestinationCategory)next;
+        this.categoryChanged(this.selectedCategory);
         this.ApplySearchFilter();
         Game1.playSound("smallSelect");
-    }
-
-    private enum DestinationCategory
-    {
-        All,
-        Favorites,
-        Bookmarks,
-        Defaults,
-        Hidden
     }
 }

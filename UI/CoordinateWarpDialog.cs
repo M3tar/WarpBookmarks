@@ -14,13 +14,13 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     private const int DialogWidth = 800;
     private const int DialogHeight = 450;
     private const int DropdownRowHeight = 36;
-    private const int VisibleDropdownRows = 4;
+    private const int VisibleDropdownRows = 7;
     private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
 
     private readonly WarpService warpService;
     private readonly Func<string, string> translate;
     private readonly Action returnToMenu;
-    private readonly Func<WarpDestination, bool> saveBookmark;
+    private readonly Action<WarpDestination> saveBookmark;
     private readonly Texture2D parchmentTexture;
     private readonly TextBox xBox;
     private readonly TextBox yBox;
@@ -38,12 +38,12 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     private string statusText;
     private Color statusColor = Game1.textColor;
     private WarpDestination? previewDestination;
-    private bool savedPreview;
 
     private Rectangle MapButton => new(this.xPositionOnScreen + 190, this.yPositionOnScreen + 92, 520, 46);
     private Rectangle DropdownArea => new(this.MapButton.X, this.MapButton.Bottom, this.MapButton.Width, 48 + DropdownRowHeight * VisibleDropdownRows);
     private Rectangle MapSearchArea => new(this.mapSearchBox.X, this.mapSearchBox.Y, this.mapSearchBox.Width, 42);
-    private Rectangle DropdownRowsArea => new(this.MapButton.X, this.MapButton.Bottom + 48, this.MapButton.Width, DropdownRowHeight * VisibleDropdownRows);
+    private Rectangle DropdownRowsArea => new(this.MapButton.X, this.MapButton.Bottom + 48, this.MapButton.Width - 18, DropdownRowHeight * VisibleDropdownRows);
+    private Rectangle ScrollbarTrack => new(this.MapButton.Right - 14, this.MapButton.Bottom + 52, 10, DropdownRowHeight * VisibleDropdownRows - 8);
     private Rectangle XArea => new(this.xBox.X, this.xBox.Y, this.xBox.Width, 48);
     private Rectangle YArea => new(this.yBox.X, this.yBox.Y, this.yBox.Width, 48);
     private Rectangle PreviewButton => new(this.xPositionOnScreen + 100, this.yPositionOnScreen + 362, 170, 48);
@@ -55,7 +55,7 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         WarpService warpService,
         Func<string, string> translate,
         Action returnToMenu,
-        Func<WarpDestination, bool> saveBookmark
+        Action<WarpDestination> saveBookmark
     )
         : base(
             (Game1.uiViewport.Width - DialogWidth) / 2,
@@ -143,6 +143,15 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
                 this.SetKeyboardFocus(this.mapSearchBox);
                 return;
             }
+            if (this.ScrollbarTrack.Contains(x, y) && this.filteredLocationIndices.Count > VisibleDropdownRows)
+            {
+                if (this.GetScrollbarThumb().Contains(x, y))
+                    return;
+                int pageDirection = y < this.GetScrollbarThumb().Center.Y ? -1 : 1;
+                this.ScrollDropdown(pageDirection * VisibleDropdownRows);
+                Game1.playSound("shiny4");
+                return;
+            }
             if (this.DropdownRowsArea.Contains(x, y))
             {
                 int visibleIndex = (y - this.DropdownRowsArea.Y) / DropdownRowHeight;
@@ -185,14 +194,10 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
             this.warpService.TryWarp(this.previewDestination);
             return;
         }
-        if (this.SaveButton.Contains(x, y) && this.previewDestination is not null && !this.savedPreview)
+        if (this.SaveButton.Contains(x, y) && this.previewDestination is not null)
         {
-            this.savedPreview = this.saveBookmark(this.previewDestination);
-            if (this.savedPreview)
-            {
-                this.statusText = this.translate("coordinate.status-saved");
-                this.statusColor = Game1.textColor;
-            }
+            this.saveBookmark(this.previewDestination);
+            return;
         }
     }
 
@@ -200,8 +205,7 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     {
         if (!this.dropdownOpen)
             return;
-        int maxOffset = Math.Max(0, this.filteredLocationIndices.Count - VisibleDropdownRows);
-        this.dropdownOffset = Math.Clamp(this.dropdownOffset + (direction < 0 ? 1 : -1), 0, maxOffset);
+        this.ScrollDropdown(direction < 0 ? 3 : -3);
     }
 
     public override void receiveKeyPress(Keys key)
@@ -279,7 +283,7 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         b.DrawString(Game1.smallFont, this.translate("coordinate.xy-hint"), new Vector2(this.xPositionOnScreen + 190, this.yPositionOnScreen + 230), Color.DarkSlateGray);
         b.DrawString(Game1.smallFont, this.statusText, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 294), this.statusColor);
         this.DrawButton(b, this.PreviewButton, this.translate("coordinate.preview"), enabled: true);
-        this.DrawButton(b, this.SaveButton, this.savedPreview ? this.translate("coordinate.saved") : this.translate("coordinate.save"), enabled: this.previewDestination is not null && !this.savedPreview);
+        this.DrawButton(b, this.SaveButton, this.translate("coordinate.save"), enabled: this.previewDestination is not null);
         this.DrawButton(b, this.WarpButton, this.translate("coordinate.warp"), enabled: this.previewDestination is not null);
         if (this.dropdownOpen)
             this.DrawDropdown(b);
@@ -328,7 +332,6 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         candidate.Location.DisplayName = target.DisplayName;
         candidate.Name = $"{target.DisplayName} ({x}, {y})";
         this.previewDestination = candidate;
-        this.savedPreview = false;
         this.statusText = this.translate("coordinate.status-valid")
             .Replace("{{location}}", target.DisplayName)
             .Replace("{{x}}", safeTile.X.ToString())
@@ -407,7 +410,6 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     private void InvalidatePreview(string statusKey)
     {
         this.previewDestination = null;
-        this.savedPreview = false;
         this.statusText = this.translate(statusKey);
         this.statusColor = Game1.textColor;
     }
@@ -446,6 +448,35 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
                 b.Draw(Game1.staminaRect, bounds, new Color(222, 184, 120) * 0.4f);
             b.DrawString(Game1.smallFont, this.locationOptions[optionIndex].Label, new Vector2(bounds.X + 12, bounds.Y + 7), Game1.textColor);
         }
+        if (this.filteredLocationIndices.Count > VisibleDropdownRows)
+        {
+            b.Draw(Game1.staminaRect, this.ScrollbarTrack, new Color(120, 78, 48) * 0.18f);
+            b.Draw(Game1.staminaRect, this.GetScrollbarThumb(), new Color(120, 78, 48) * 0.62f);
+        }
+    }
+
+    private void ScrollDropdown(int amount)
+    {
+        int maxOffset = Math.Max(0, this.filteredLocationIndices.Count - VisibleDropdownRows);
+        this.dropdownOffset = Math.Clamp(this.dropdownOffset + amount, 0, maxOffset);
+        if (this.filteredLocationIndices.Count == 0)
+            return;
+        this.dropdownHighlight = Math.Clamp(
+            this.dropdownHighlight,
+            this.dropdownOffset,
+            Math.Min(this.filteredLocationIndices.Count - 1, this.dropdownOffset + VisibleDropdownRows - 1)
+        );
+    }
+
+    private Rectangle GetScrollbarThumb()
+    {
+        int total = Math.Max(1, this.filteredLocationIndices.Count);
+        int trackHeight = this.ScrollbarTrack.Height;
+        int thumbHeight = Math.Max(24, trackHeight * VisibleDropdownRows / total);
+        int maxOffset = Math.Max(1, total - VisibleDropdownRows);
+        int travel = Math.Max(0, trackHeight - thumbHeight);
+        int thumbY = this.ScrollbarTrack.Y + travel * this.dropdownOffset / maxOffset;
+        return new Rectangle(this.ScrollbarTrack.X, thumbY, this.ScrollbarTrack.Width, thumbHeight);
     }
 
     private void DrawButton(SpriteBatch b, Rectangle bounds, string label, bool enabled)

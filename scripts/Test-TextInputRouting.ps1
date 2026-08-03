@@ -5,6 +5,7 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $CoordinatePath = Join-Path $ProjectRoot "UI\CoordinateWarpDialog.cs"
 $RenamePath = Join-Path $ProjectRoot "UI\BookmarkRenameDialog.cs"
+$CreatePath = Join-Path $ProjectRoot "UI\BookmarkCreateDialog.cs"
 $EntryPath = Join-Path $ProjectRoot "ModEntry.cs"
 
 $Failures = @()
@@ -23,6 +24,18 @@ elseif ((Get-Content $RenamePath -Raw) -notmatch 'inputBox\.Selected') {
 }
 if ((Get-Content $EntryPath -Raw) -match 'new\s+NamingMenu\s*\(') {
     $Failures += "ModEntry still uses the game's NamingMenu instead of the controlled bookmark editor."
+}
+if (-not (Test-Path $CreatePath)) {
+    $Failures += "The manual bookmark naming dialog is missing."
+}
+else {
+    $CreateSource = Get-Content $CreatePath -Raw
+    if ($CreateSource -notmatch 'Text\s*=\s*""') {
+        $Failures += "The create dialog should start empty so the known caret bug isn't required for naming."
+    }
+    if ($CreateSource -notmatch 'suggestedName') {
+        $Failures += "The create dialog doesn't expose the automatic name as a separate suggestion."
+    }
 }
 
 if ($Failures.Count -gt 0) {
