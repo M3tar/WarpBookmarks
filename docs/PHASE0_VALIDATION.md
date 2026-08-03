@@ -36,7 +36,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 1. 通过 SMAPI 启动游戏；
 2. 日志应出现 `Warp Bookmarks 0.0.4`；
-3. 载入存档后应看到当前 K 与 Shift+K 提示；
+3. 载入存档后不应出现快捷键 HUD；当前快捷键只在传送手册内部显示；
 4. 安装 GMCM 时修改两个快捷键，重新载入确认提示使用新绑定；
 5. K/Shift+K 当前只显示阶段 0 提示，不执行传送或写入书签；不应打开其他游戏界面。
 

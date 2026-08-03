@@ -9,6 +9,4 @@ internal sealed class ModConfig
     public KeybindList OpenMenuKey { get; set; } = KeybindList.Parse("K");
 
     public KeybindList CreateBookmarkKey { get; set; } = KeybindList.Parse("LeftShift + K");
-
-    public bool ShowShortcutHint { get; set; } = true;
 }

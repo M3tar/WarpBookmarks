@@ -13,10 +13,9 @@ namespace WarpBookmarks;
 /// <summary>The mod entry point.</summary>
 public sealed class ModEntry : Mod
 {
-    private const int CurrentConfigVersion = 3;
+    private const int CurrentConfigVersion = 4;
 
     private ModConfig? config;
-    private bool showedShortcutHint;
     private BookmarkRepository? repository;
     private DestinationCatalog? catalog;
     private WarpService? warpService;
@@ -97,14 +96,6 @@ public sealed class ModEntry : Mod
             () => this.Helper.Translation.Get("config.create-bookmark.tooltip"),
             fieldId: nameof(ModConfig.CreateBookmarkKey)
         );
-        api.AddBoolOption(
-            this.ModManifest,
-            () => this.config.ShowShortcutHint,
-            value => this.config.ShowShortcutHint = value,
-            () => this.Helper.Translation.Get("config.show-hint.name"),
-            () => this.Helper.Translation.Get("config.show-hint.tooltip"),
-            fieldId: nameof(ModConfig.ShowShortcutHint)
-        );
     }
 
     private void ResetConfig()
@@ -116,7 +107,6 @@ public sealed class ModEntry : Mod
         this.config.ConfigVersion = CurrentConfigVersion;
         this.config.OpenMenuKey = defaults.OpenMenuKey;
         this.config.CreateBookmarkKey = defaults.CreateBookmarkKey;
-        this.config.ShowShortcutHint = defaults.ShowShortcutHint;
     }
 
     private void MigrateConfig()
@@ -185,29 +175,13 @@ public sealed class ModEntry : Mod
         this.lastMenuCategory = DestinationCategory.Common;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
-        this.ShowShortcutHintIfNeeded();
     }
 
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
-        this.showedShortcutHint = false;
         this.lastMenuCategory = DestinationCategory.Common;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
-    }
-
-    private void ShowShortcutHintIfNeeded()
-    {
-        if (this.showedShortcutHint || this.config is null || !this.config.ShowShortcutHint)
-            return;
-
-        this.showedShortcutHint = true;
-        string message = this.Helper.Translation.Get("hud.shortcut-hint", new
-        {
-            open = this.config.OpenMenuKey,
-            create = this.config.CreateBookmarkKey
-        });
-        Game1.addHUDMessage(new HUDMessage(message, HUDMessage.newQuest_type));
     }
 
     private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)

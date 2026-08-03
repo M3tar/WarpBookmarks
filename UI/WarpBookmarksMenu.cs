@@ -14,7 +14,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private const int MenuHeight = 540;
     private const int RowHeight = 48;
     private const int ActionPadding = 18;
-    private const int ActionGap = 12;
+    private const int ActionGap = 10;
     private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
 
     private readonly List<WarpDestination> allDestinations;
@@ -40,16 +40,21 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
     private Rectangle CategoryArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, 36);
     private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 132, 420, this.height - 220);
+    private Rectangle ListRowsArea => new(this.ListArea.X, this.ListArea.Y, this.ListArea.Width - 18, this.ListArea.Height);
+    private Rectangle ListScrollbarTrack => new(this.ListArea.Right - 12, this.ListArea.Y + 4, 9, this.ListArea.Height - 12);
     private Rectangle DetailArea => new(this.xPositionOnScreen + 478, this.yPositionOnScreen + 86, this.width - 514, this.height - 174);
-    private int ActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap) / 2;
-    private Rectangle WarpButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 0);
-    private Rectangle FavoriteButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 0);
-    private Rectangle EditButton => this.GetActionButtonBounds(column: 0, rowFromBottom: 1);
-    private Rectangle RemoveButton => this.GetActionButtonBounds(column: 1, rowFromBottom: 1);
+    private int ThreeActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap * 2) / 3;
+    private int TwoActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap) / 2;
+    private Rectangle BookmarkFavoriteButton => this.GetThreeActionButtonBounds(0);
+    private Rectangle BookmarkEditButton => this.GetThreeActionButtonBounds(1);
+    private Rectangle BookmarkRemoveButton => this.GetThreeActionButtonBounds(2);
+    private Rectangle ContextLeftButton => this.GetTwoActionButtonBounds(0);
+    private Rectangle ContextRightButton => this.GetTwoActionButtonBounds(1);
     private Rectangle RecordButton => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 70, 170, 44);
     private Rectangle CoordinateButton => new(this.xPositionOnScreen + 218, this.yPositionOnScreen + this.height - 70, 210, 44);
-    private Rectangle RestoreButton => new(this.xPositionOnScreen + 440, this.yPositionOnScreen + this.height - 70, 180, 44);
+    private Rectangle PrimaryWarpButton => new(this.xPositionOnScreen + 594, this.yPositionOnScreen + this.height - 70, 330, 44);
     private Rectangle SearchArea => new(this.searchBox.X, this.searchBox.Y, this.searchBox.Width, 48);
+    private int VisibleRows => Math.Max(1, this.ListArea.Height / RowHeight);
 
     public WarpBookmarksMenu(
         IEnumerable<WarpDestination> destinations,
@@ -138,11 +143,23 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             return;
         }
 
+        if (this.ListScrollbarTrack.Contains(x, y) && this.destinations.Count > this.VisibleRows)
+        {
+            Rectangle thumb = this.GetListScrollbarThumb();
+            if (!thumb.Contains(x, y))
+            {
+                int pageDirection = y < thumb.Center.Y ? -1 : 1;
+                this.ScrollList(pageDirection * this.VisibleRows);
+                Game1.playSound("shiny4");
+            }
+            return;
+        }
+
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
         for (int row = 0; row < visibleRows; row++)
         {
             int index = this.scrollOffset + row;
-            Rectangle bounds = new(this.ListArea.X, this.ListArea.Y + row * RowHeight, this.ListArea.Width, RowHeight - 4);
+            Rectangle bounds = new(this.ListRowsArea.X, this.ListRowsArea.Y + row * RowHeight, this.ListRowsArea.Width, RowHeight - 4);
             if (index < this.destinations.Count && bounds.Contains(x, y))
             {
                 this.selectedIndex = index;
@@ -157,11 +174,6 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             this.recordCurrent();
             return;
         }
-        if (this.RestoreButton.Contains(x, y))
-        {
-            this.restoreDefaults();
-            return;
-        }
         if (this.CoordinateButton.Contains(x, y))
         {
             this.openCoordinates();
@@ -172,58 +184,50 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (selected is null)
             return;
 
-        if (this.WarpButton.Contains(x, y) && selected.CanWarp)
+        if (this.PrimaryWarpButton.Contains(x, y) && selected.CanWarp)
         {
             this.warp(selected);
             return;
         }
-        if (this.EditButton.Contains(x, y) && selected.Kind == WarpDestinationKind.Bookmark)
+
+        if (selected.Kind == WarpDestinationKind.Bookmark)
         {
-            this.edit(selected);
+            if (this.BookmarkFavoriteButton.Contains(x, y))
+                this.ToggleFavorite(selected);
+            else if (this.BookmarkEditButton.Contains(x, y))
+                this.edit(selected);
+            else if (this.BookmarkRemoveButton.Contains(x, y))
+                this.HandleRemove(selected);
             return;
         }
-        if (this.FavoriteButton.Contains(x, y)
-            && !selected.IsHidden
-            && (selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default))
+
+        if (selected.Kind == WarpDestinationKind.Default && selected.IsHidden)
         {
-            selected.IsFavorite = !selected.IsFavorite;
-            this.setFavorite(selected, selected.IsFavorite);
-            this.ApplySearchFilter();
-            Game1.playSound("drumkit6");
-            return;
-        }
-        if (this.RemoveButton.Contains(x, y) && selected.CanRemove)
-        {
-            if (selected.IsHidden && selected.Kind == WarpDestinationKind.Default)
+            if (this.ContextLeftButton.Contains(x, y))
             {
                 this.restoreHidden(selected);
                 Game1.playSound("smallSelect");
-                return;
             }
-            if (this.pendingRemoveId != selected.Id)
+            else if (this.ContextRightButton.Contains(x, y))
             {
-                this.pendingRemoveId = selected.Id;
-                Game1.playSound("cancel");
-                return;
+                this.restoreDefaults();
+                Game1.playSound("smallSelect");
             }
+            return;
+        }
 
-            this.remove(selected);
-            if (selected.Kind == WarpDestinationKind.Default)
-                return;
-            this.allDestinations.RemoveAll(item => item.Id == selected.Id && item.Kind == selected.Kind);
-            this.ApplySearchFilter();
-            this.selectedIndex = Math.Clamp(this.selectedIndex, 0, Math.Max(0, this.destinations.Count - 1));
-            this.pendingRemoveId = null;
-            this.EnsureSelectedVisible();
-            Game1.playSound("trashcan");
+        if (selected.Kind == WarpDestinationKind.Default)
+        {
+            if (this.ContextLeftButton.Contains(x, y))
+                this.ToggleFavorite(selected);
+            else if (this.ContextRightButton.Contains(x, y))
+                this.HandleRemove(selected);
         }
     }
 
     public override void receiveScrollWheelAction(int direction)
     {
-        int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
-        int maxOffset = Math.Max(0, this.destinations.Count - visibleRows);
-        this.scrollOffset = Math.Clamp(this.scrollOffset + (direction < 0 ? 1 : -1), 0, maxOffset);
+        this.ScrollList(direction < 0 ? 3 : -3);
         base.receiveScrollWheelAction(direction);
     }
 
@@ -257,6 +261,30 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (key is Keys.Up or Keys.W)
         {
             this.selectedIndex = Math.Max(0, this.selectedIndex - 1);
+            this.EnsureSelectedVisible();
+            return;
+        }
+        if (key == Keys.PageDown)
+        {
+            this.selectedIndex = Math.Min(this.destinations.Count - 1, this.selectedIndex + this.VisibleRows);
+            this.EnsureSelectedVisible();
+            return;
+        }
+        if (key == Keys.PageUp)
+        {
+            this.selectedIndex = Math.Max(0, this.selectedIndex - this.VisibleRows);
+            this.EnsureSelectedVisible();
+            return;
+        }
+        if (key == Keys.Home && this.destinations.Count > 0)
+        {
+            this.selectedIndex = 0;
+            this.EnsureSelectedVisible();
+            return;
+        }
+        if (key == Keys.End && this.destinations.Count > 0)
+        {
+            this.selectedIndex = this.destinations.Count - 1;
             this.EnsureSelectedVisible();
             return;
         }
@@ -302,7 +330,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                 break;
 
             WarpDestination destination = this.destinations[index];
-            Rectangle bounds = new(this.ListArea.X, this.ListArea.Y + row * RowHeight, this.ListArea.Width, RowHeight - 4);
+            Rectangle bounds = new(this.ListRowsArea.X, this.ListRowsArea.Y + row * RowHeight, this.ListRowsArea.Width, RowHeight - 4);
             Color fill = index == this.selectedIndex ? new Color(196, 135, 70) * 0.55f : new Color(120, 78, 48) * 0.10f;
             b.Draw(Game1.staminaRect, bounds, fill);
             string marker = destination.IsFavorite ? "★ " : destination.Kind switch
@@ -311,14 +339,20 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                 WarpDestinationKind.Previous => "↩ ",
                 _ => "  "
             };
-            b.DrawString(Game1.smallFont, marker + destination.Name, new Vector2(bounds.X + 12, bounds.Y + 10), Game1.textColor);
+            string rowText = this.FitText(marker + destination.Name, bounds.Width - 24);
+            b.DrawString(Game1.smallFont, rowText, new Vector2(bounds.X + 12, bounds.Y + 10), Game1.textColor);
         }
+        this.DrawListScrollbar(b);
 
         this.DrawDetails(b);
         this.DrawButton(b, this.RecordButton, this.translate("menu.record"), true);
         this.DrawButton(b, this.CoordinateButton, this.translate("menu.coordinates-action"), true);
-        this.DrawButton(b, this.RestoreButton, this.translate("menu.restore-defaults"), true);
-        b.DrawString(Game1.smallFont, this.shortcutText, new Vector2(this.RestoreButton.Right + 18, this.RestoreButton.Y + 11), Color.DarkSlateGray);
+        WarpDestination? selected = this.Selected;
+        string warpText = selected?.CanWarp == true
+            ? this.translate("menu.warp-to").Replace("{{name}}", selected.Name)
+            : this.translate("menu.select-to-warp");
+        this.DrawButton(b, this.PrimaryWarpButton, warpText, selected?.CanWarp == true);
+        b.DrawString(Game1.smallFont, this.shortcutText, new Vector2(this.xPositionOnScreen + 36, this.yPositionOnScreen + this.height - 100), Color.DarkSlateGray);
         this.upperRightCloseButton?.draw(b);
         this.drawMouse(b);
     }
@@ -331,31 +365,38 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         WarpDestination? selected = this.Selected;
         if (selected is null)
         {
-            b.DrawString(Game1.smallFont, this.translate("menu.empty"), new Vector2(area.X + 18, area.Y + 18), Game1.textColor);
+            string emptyKey = this.selectedCategory == DestinationCategory.Hidden ? "menu.hidden-empty" : "menu.empty";
+            b.DrawString(Game1.smallFont, this.translate(emptyKey), new Vector2(area.X + 18, area.Y + 18), Game1.textColor);
             return;
         }
 
         int y = area.Y + 18;
-        b.DrawString(Game1.dialogueFont, selected.Name, new Vector2(area.X + 18, y), Game1.textColor);
+        string detailName = this.FitText(selected.Name, area.Width - 36, Game1.dialogueFont);
+        b.DrawString(Game1.dialogueFont, detailName, new Vector2(area.X + 18, y), Game1.textColor);
         y += 62;
         this.DrawDetailLine(b, "menu.location", selected.Location.DisplayName, area.X + 18, ref y);
         this.DrawDetailLine(b, "menu.internal-name", selected.Location.LocationName, area.X + 18, ref y);
         this.DrawDetailLine(b, "menu.coordinates", $"{selected.Location.TileX}, {selected.Location.TileY}", area.X + 18, ref y);
         this.DrawDetailLine(b, "menu.type", this.translate($"kind.{selected.Kind.ToString().ToLowerInvariant()}"), area.X + 18, ref y);
 
-        this.DrawButton(b, this.WarpButton, this.translate("menu.warp"), selected.CanWarp);
-        this.DrawButton(b, this.EditButton, this.translate("menu.rename"), selected.Kind == WarpDestinationKind.Bookmark);
-        bool canFavorite = !selected.IsHidden
-            && (selected.Kind is WarpDestinationKind.Bookmark or WarpDestinationKind.Default);
-        this.DrawButton(b, this.FavoriteButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), canFavorite);
-        string removeText = selected.IsHidden
-            ? this.translate("menu.restore")
-            : this.pendingRemoveId == selected.Id
-            ? selected.Kind == WarpDestinationKind.Default
-                ? this.translate("menu.confirm-hide")
-                : this.translate("menu.confirm-delete")
-            : selected.Kind == WarpDestinationKind.Default ? this.translate("menu.hide") : this.translate("menu.delete");
-        this.DrawButton(b, this.RemoveButton, removeText, selected.CanRemove);
+        if (selected.Kind == WarpDestinationKind.Bookmark)
+        {
+            this.DrawButton(b, this.BookmarkFavoriteButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), true);
+            this.DrawButton(b, this.BookmarkEditButton, this.translate("menu.rename"), true);
+            string removeText = this.pendingRemoveId == selected.Id ? this.translate("menu.confirm-delete") : this.translate("menu.delete");
+            this.DrawButton(b, this.BookmarkRemoveButton, removeText, true);
+        }
+        else if (selected.Kind == WarpDestinationKind.Default && selected.IsHidden)
+        {
+            this.DrawButton(b, this.ContextLeftButton, this.translate("menu.restore-this"), true);
+            this.DrawButton(b, this.ContextRightButton, this.translate("menu.restore-defaults"), true);
+        }
+        else if (selected.Kind == WarpDestinationKind.Default)
+        {
+            this.DrawButton(b, this.ContextLeftButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), true);
+            string hideText = this.pendingRemoveId == selected.Id ? this.translate("menu.confirm-hide") : this.translate("menu.hide");
+            this.DrawButton(b, this.ContextRightButton, hideText, true);
+        }
     }
 
     private void DrawDetailLine(SpriteBatch b, string labelKey, string value, int x, ref int y)
@@ -372,19 +413,111 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                 ? Color.Wheat
                 : Color.White;
         IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, tint);
-        Vector2 size = Game1.smallFont.MeasureString(label);
-        b.DrawString(Game1.smallFont, label, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), enabled ? Game1.textColor : Color.DarkGray);
+        string fittedLabel = this.FitText(label, bounds.Width - 24);
+        Vector2 size = Game1.smallFont.MeasureString(fittedLabel);
+        Color textColor = !enabled ? Color.DarkGray : Game1.textColor;
+        b.DrawString(Game1.smallFont, fittedLabel, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), textColor);
     }
 
-    private Rectangle GetActionButtonBounds(int column, int rowFromBottom)
+    private Rectangle GetThreeActionButtonBounds(int column)
     {
-        int x = this.DetailArea.X + ActionPadding + column * (this.ActionButtonWidth + ActionGap);
-        int y = this.DetailArea.Bottom - 62 - rowFromBottom * 54;
-        return new Rectangle(x, y, this.ActionButtonWidth, 44);
+        int x = this.DetailArea.X + ActionPadding + column * (this.ThreeActionButtonWidth + ActionGap);
+        return new Rectangle(x, this.DetailArea.Bottom - 62, this.ThreeActionButtonWidth, 44);
+    }
+
+    private Rectangle GetTwoActionButtonBounds(int column)
+    {
+        int x = this.DetailArea.X + ActionPadding + column * (this.TwoActionButtonWidth + ActionGap);
+        return new Rectangle(x, this.DetailArea.Bottom - 62, this.TwoActionButtonWidth, 44);
+    }
+
+    private void ToggleFavorite(WarpDestination destination)
+    {
+        if (destination.IsHidden || destination.Kind is not (WarpDestinationKind.Bookmark or WarpDestinationKind.Default))
+            return;
+
+        destination.IsFavorite = !destination.IsFavorite;
+        this.setFavorite(destination, destination.IsFavorite);
+        this.ApplySearchFilter();
+        Game1.playSound("drumkit6");
+    }
+
+    private void HandleRemove(WarpDestination destination)
+    {
+        if (!destination.CanRemove || destination.IsHidden)
+            return;
+        if (this.pendingRemoveId != destination.Id)
+        {
+            this.pendingRemoveId = destination.Id;
+            Game1.playSound("cancel");
+            return;
+        }
+
+        this.remove(destination);
+        if (destination.Kind == WarpDestinationKind.Default)
+            return;
+
+        this.allDestinations.RemoveAll(item => item.Id == destination.Id && item.Kind == destination.Kind);
+        this.ApplySearchFilter();
+        this.selectedIndex = Math.Clamp(this.selectedIndex, 0, Math.Max(0, this.destinations.Count - 1));
+        this.pendingRemoveId = null;
+        this.EnsureSelectedVisible();
+        Game1.playSound("trashcan");
+    }
+
+    private void ScrollList(int amount)
+    {
+        int maxOffset = Math.Max(0, this.destinations.Count - this.VisibleRows);
+        this.scrollOffset = Math.Clamp(this.scrollOffset + amount, 0, maxOffset);
+    }
+
+    private Rectangle GetListScrollbarThumb()
+    {
+        int total = Math.Max(1, this.destinations.Count);
+        int trackHeight = this.ListScrollbarTrack.Height;
+        int thumbHeight = Math.Max(24, trackHeight * this.VisibleRows / total);
+        int maxOffset = Math.Max(1, total - this.VisibleRows);
+        int travel = Math.Max(0, trackHeight - thumbHeight);
+        int thumbY = this.ListScrollbarTrack.Y + travel * this.scrollOffset / maxOffset;
+        return new Rectangle(this.ListScrollbarTrack.X, thumbY, this.ListScrollbarTrack.Width, thumbHeight);
+    }
+
+    private void DrawListScrollbar(SpriteBatch b)
+    {
+        if (this.destinations.Count <= this.VisibleRows)
+            return;
+        b.Draw(Game1.staminaRect, this.ListScrollbarTrack, new Color(120, 78, 48) * 0.18f);
+        b.Draw(Game1.staminaRect, this.GetListScrollbarThumb(), new Color(120, 78, 48) * 0.62f);
+    }
+
+    private string FitText(string text, int maximumWidth)
+        => this.FitText(text, maximumWidth, Game1.smallFont);
+
+    private string FitText(string text, int maximumWidth, SpriteFont font)
+    {
+        if (font.MeasureString(text).X <= maximumWidth)
+            return text;
+
+        const string ellipsis = "…";
+        string shortened = text;
+        while (shortened.Length > 0
+            && font.MeasureString(shortened + ellipsis).X > maximumWidth)
+        {
+            shortened = shortened[..^1];
+        }
+        return shortened.Length == 0 ? ellipsis : shortened + ellipsis;
     }
 
     private void EnsureSelectedVisible()
     {
+        if (this.destinations.Count == 0)
+        {
+            this.selectedIndex = 0;
+            this.scrollOffset = 0;
+            return;
+        }
+
+        this.selectedIndex = Math.Clamp(this.selectedIndex, 0, this.destinations.Count - 1);
         int visibleRows = Math.Max(1, this.ListArea.Height / RowHeight);
         if (this.selectedIndex < this.scrollOffset)
             this.scrollOffset = this.selectedIndex;
