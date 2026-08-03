@@ -1,6 +1,7 @@
 {
   "hud.bookmark-created": "Recorded bookmark: {{name}}",
-  "hud.warp-success": "Warped to {{name}} at ({{x}}, {{y}}).",
+  "hud.warp-success": "Warped to {{name}}.",
+  "hud.warp-success-adjusted": "Warped to {{name}}; the safe landing tile was adjusted to ({{x}}, {{y}}).",
   "hud.remove-confirm": "Press the remove button again to confirm.",
   "menu.title": "Warp Bookmarks",
   "menu.list-title": "Destinations",

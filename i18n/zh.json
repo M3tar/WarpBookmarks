@@ -1,6 +1,7 @@
 {
   "hud.bookmark-created": "已记录书签：{{name}}",
-  "hud.warp-success": "已传送至 {{name}}（{{x}}, {{y}}）。",
+  "hud.warp-success": "已传送至 {{name}}。",
+  "hud.warp-success-adjusted": "已传送至 {{name}}；安全落点调整为（{{x}}, {{y}}）。",
   "hud.remove-confirm": "请再次点击移除按钮确认。",
   "menu.title": "传送书签",
   "menu.list-title": "可用地点",

@@ -1,24 +1,34 @@
 [CmdletBinding()]
 param(
-    [string] $ScriptPath = (Join-Path $PSScriptRoot "Build-Windows.ps1")
+    [string[]] $ScriptPath
 )
 
 $ErrorActionPreference = "Stop"
-$ResolvedScriptPath = (Resolve-Path $ScriptPath).Path
-$Tokens = $null
-$ParseErrors = $null
+$PathsToCheck = if ($ScriptPath.Count -gt 0) {
+    $ScriptPath | ForEach-Object { (Resolve-Path $_).Path }
+}
+else {
+    Get-ChildItem $PSScriptRoot -Filter "*.ps1" -File | Select-Object -ExpandProperty FullName
+}
+$Failures = @()
 
-[System.Management.Automation.Language.Parser]::ParseFile(
-    $ResolvedScriptPath,
-    [ref] $Tokens,
-    [ref] $ParseErrors
-) | Out-Null
+foreach ($ResolvedScriptPath in $PathsToCheck) {
+    $Tokens = $null
+    $ParseErrors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile(
+        $ResolvedScriptPath,
+        [ref] $Tokens,
+        [ref] $ParseErrors
+    ) | Out-Null
 
-if ($ParseErrors.Count -gt 0) {
     foreach ($ParseError in $ParseErrors) {
-        Write-Error "$($ParseError.Extent.StartLineNumber):$($ParseError.Extent.StartColumnNumber) $($ParseError.Message)"
+        $Failures += "$ResolvedScriptPath`:$($ParseError.Extent.StartLineNumber):$($ParseError.Extent.StartColumnNumber) $($ParseError.Message)"
     }
-    throw "PowerShell syntax validation failed for '$ResolvedScriptPath'."
 }
 
-Write-Host "PowerShell syntax is valid: $ResolvedScriptPath"
+if ($Failures.Count -gt 0) {
+    $Failures | ForEach-Object { Write-Error $_ }
+    throw "PowerShell syntax validation failed with $($Failures.Count) error(s)."
+}
+
+Write-Host "PowerShell syntax is valid for $($PathsToCheck.Count) script(s): $PSScriptRoot"

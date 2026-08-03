@@ -42,7 +42,10 @@ internal sealed class WarpService
             if (destination.Kind == WarpDestinationKind.Bookmark)
                 this.repository.MarkUsed(destination.Id);
 
-            string message = this.translate("hud.warp-success")
+            bool landingAdjusted = safeTile.X != destination.Location.TileX
+                || safeTile.Y != destination.Location.TileY;
+            string messageKey = landingAdjusted ? "hud.warp-success-adjusted" : "hud.warp-success";
+            string message = this.translate(messageKey)
                 .Replace("{{name}}", destination.Name)
                 .Replace("{{x}}", safeTile.X.ToString())
                 .Replace("{{y}}", safeTile.Y.ToString());
