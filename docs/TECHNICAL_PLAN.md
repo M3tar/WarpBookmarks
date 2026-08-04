@@ -95,6 +95,8 @@ PlayerBookmarkData
 
 优先候选是为每个 `Farmer` 使用带 Mod UniqueID 的版本化 `modData`；它能自然区分玩家并随存档保存。阶段 0 必须实测：
 
+进程内缓存不能只缓存“最近一次读取”，必须同时记录 `SaveFolderName + uniqueIDForThisGame + UniqueMultiplayerID + ScreenId` 归属。任一字段变化都必须丢弃旧缓存，而每次写入 `Game1.player.modData` 前必须重新校验归属。
+
 - 联机加入者修改自己的字段是否正确同步并由主机保存；
 - 重新加入、改角色显示名、移动小屋后是否仍能识别；
 - 未安装 Mod 的玩家是否完全不受影响；

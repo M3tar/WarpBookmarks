@@ -17,6 +17,7 @@ internal sealed class BookmarkRepository
     private readonly string dataKey;
     private readonly IMonitor monitor;
     private PlayerBookmarkData? cachedData;
+    private string? cachedOwnerKey;
 
     public BookmarkRepository(IManifest manifest, IMonitor monitor)
     {
@@ -26,8 +27,22 @@ internal sealed class BookmarkRepository
 
     public PlayerBookmarkData GetData()
     {
-        if (this.cachedData is not null)
+        string currentOwnerKey = GetCurrentOwnerKey();
+        if (this.cachedData is not null
+            && string.Equals(this.cachedOwnerKey, currentOwnerKey, StringComparison.Ordinal))
+        {
             return this.cachedData;
+        }
+
+        if (this.cachedData is not null)
+        {
+            this.monitor.Log(
+                "Discarding a bookmark cache owned by a different save/player context.",
+                LogLevel.Trace
+            );
+        }
+        this.cachedData = null;
+        this.cachedOwnerKey = currentOwnerKey;
 
         if (!Game1.player.modData.TryGetValue(this.dataKey, out string? json) || string.IsNullOrWhiteSpace(json))
             return this.cachedData = new PlayerBookmarkData();
@@ -170,14 +185,39 @@ internal sealed class BookmarkRepository
         this.Save();
     }
 
-    public void ResetCache() => this.cachedData = null;
+    public string GetCurrentOwnerDescription()
+    {
+        return $"save={Game1.uniqueIDForThisGame}; player={Game1.player.UniqueMultiplayerID}; screen={Context.ScreenId}; stored={Game1.player.modData.ContainsKey(this.dataKey)}";
+    }
+
+    public void ResetCache()
+    {
+        this.cachedData = null;
+        this.cachedOwnerKey = null;
+    }
 
     private void Save()
     {
         if (this.cachedData is null)
             return;
 
+        string currentOwnerKey = GetCurrentOwnerKey();
+        if (!string.Equals(this.cachedOwnerKey, currentOwnerKey, StringComparison.Ordinal))
+        {
+            this.monitor.Log(
+                "Refusing to write bookmark data because the active save/player changed after the cache was loaded.",
+                LogLevel.Error
+            );
+            this.ResetCache();
+            return;
+        }
+
         Game1.player.modData[this.dataKey] = JsonSerializer.Serialize(this.cachedData, JsonOptions);
+    }
+
+    private static string GetCurrentOwnerKey()
+    {
+        return $"{Constants.SaveFolderName}|{Game1.uniqueIDForThisGame}|{Game1.player.UniqueMultiplayerID}|{Context.ScreenId}";
     }
 
     private static string MakeUniqueName(IEnumerable<BookmarkRecord> bookmarks, string suggestedName)

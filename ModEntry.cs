@@ -500,6 +500,7 @@ public sealed class ModEntry : Mod
         }
 
         IReadOnlyList<BookmarkRecord> bookmarks = this.repository.GetData().Bookmarks;
+        this.Monitor.Log($"Bookmark data owner: {this.repository.GetCurrentOwnerDescription()}", LogLevel.Info);
         this.Monitor.Log($"Current player has {bookmarks.Count} Warp Bookmarks:", LogLevel.Info);
         foreach (BookmarkRecord bookmark in bookmarks)
         {
