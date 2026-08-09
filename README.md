@@ -3,8 +3,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/M3tar/WarpBookmarks/releases/tag/v1.0.0"><strong>GitHub Release · 下载 WarpBookmarks-1.0.0.zip</strong></a><br>
   <a href="https://www.nexusmods.com/stardewvalley/mods/50310"><img src="./assets/readme/nexus-download.svg" width="480" alt="前往 Nexus Mods 下载 Warp Bookmarks 1.0.0"></a><br>
-  <a href="https://www.nexusmods.com/stardewvalley/mods/50310"><strong>Nexus Mods · Mod ID 50310</strong></a>
+  <a href="https://www.nexusmods.com/stardewvalley/mods/50310"><strong>Nexus Mods · Mod ID 50310</strong></a><br>
+  <sub>可从 GitHub Releases 或 Nexus Mods 获取正式版本</sub>
 </p>
 
 <p align="center">
@@ -83,6 +85,11 @@
 
 ## 安装
 
+### 下载
+
+- [从 GitHub Release 直接下载 `WarpBookmarks-1.0.0.zip`](https://github.com/M3tar/WarpBookmarks/releases/download/v1.0.0/WarpBookmarks-1.0.0.zip)
+- [前往 Nexus Mods 下载（Mod ID 50310）](https://www.nexusmods.com/stardewvalley/mods/50310)
+
 ### 要求
 
 - Stardew Valley `1.6.15` 或 1.6 系列兼容后续版本
@@ -92,9 +99,20 @@
 ### 开始使用
 
 1. 安装 [SMAPI](https://smapi.io/)。
-2. 将发布压缩包解压到游戏的 `Mods` 目录。
+2. 下载 `WarpBookmarks-1.0.0.zip`，将压缩包里的 `WarpBookmarks` 文件夹解压到游戏的 `Mods` 目录。
 3. 确认文件位于 `Mods/WarpBookmarks/WarpBookmarks.dll`。
 4. 通过 SMAPI 启动游戏，载入存档后按 `K`。
+
+> [!TIP]
+> 如果最终路径变成 `Mods/WarpBookmarks/WarpBookmarks/WarpBookmarks.dll`，说明多套了一层文件夹；请将内层 `WarpBookmarks` 移到 `Mods` 下。
+
+### 第一次使用
+
+1. 载入存档后按 `K` 打开传送手册。
+2. 在左侧选择住宅、上一个位置、原版目的地或个人书签；确认右侧地点信息后，点击右下角的传送按钮。
+3. 想保存当前位置时，点击“记录当前位置”并输入名称；也可以按 `Shift + K` 跳过命名窗口，用自动名称快速记录。
+4. 通过顶部搜索与分类查找地点；选中个人书签后，可以收藏、重命名或删除。
+5. 需要精准传送时，点击“输入坐标…”，选择已经到访的地图并输入 X/Y 格子坐标；先查看预览，再传送或保存为书签。
 
 | 操作 | 默认快捷键 |
 | --- | :---: |
@@ -114,7 +132,7 @@
 
 ## 项目状态
 
-当前版本 `1.0.0` 已在 [Nexus Mods（Mod ID 50310）](https://www.nexusmods.com/stardewvalley/mods/50310) 发布。核心记录、搜索、分类、坐标传送、安全落点和每玩家数据隔离已经过单人与在线联机验证；后续增强与发布维护记录在 [Nexus Mods 发布清单](./docs/NEXUS_RELEASE_CHECKLIST.md) 和 [当前状态](./docs/STATUS.md)。
+当前版本 `1.0.0` 已在 [GitHub Releases](https://github.com/M3tar/WarpBookmarks/releases/tag/v1.0.0) 与 [Nexus Mods（Mod ID 50310）](https://www.nexusmods.com/stardewvalley/mods/50310) 发布。核心记录、搜索、分类、坐标传送、安全落点和每玩家数据隔离已经过单人与在线联机验证；后续增强与发布维护记录在 [Nexus Mods 发布清单](./docs/NEXUS_RELEASE_CHECKLIST.md) 和 [当前状态](./docs/STATUS.md)。
 
 开发与设计资料：
 
