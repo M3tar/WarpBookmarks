@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1780" viewBox="0 0 1200 1780" role="img" aria-labelledby="title desc">
+  <title id="title">传送书签主操作层级的 UI 调整</title>
+  <desc id="desc">对比第一版与改版界面，说明底部大按钮容易被理解为确认当前选择，以及如何通过独立精准坐标页和明确的目标按钮减少误触。</desc>
+
+  <defs>
+    <clipPath id="before-shot"><rect x="64" y="248" width="684" height="440" rx="18"/></clipPath>
+    <clipPath id="coord-shot"><rect x="624" y="910" width="512" height="356" rx="18"/></clipPath>
+    <clipPath id="bookmark-shot"><rect x="64" y="1280" width="552" height="366" rx="18"/></clipPath>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#168ad1"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#ef6c2f"/>
+    </marker>
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="10" stdDeviation="0" flood-color="#000000" flood-opacity="0.11"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1780" fill="#e9e8e5"/>
+  <path d="M64 66H1136M64 1714H1136" stroke="#c7c6c1" stroke-width="2"/>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+    <text x="64" y="126" font-size="50" font-weight="800" fill="#202326">按钮的位置，也在替玩家做决定</text>
+    <text x="64" y="174" font-size="24" fill="#5f6469">底部按钮天然更像“确认当前选择”的主操作。</text>
+    <rect x="64" y="198" width="208" height="6" rx="3" fill="#168ad1"/>
+    <rect x="278" y="198" width="92" height="6" rx="3" fill="#ef6c2f"/>
+
+    <!-- 1 / first version -->
+    <g filter="url(#soft-shadow)">
+      <rect x="64" y="248" width="684" height="440" rx="18" fill="#d2d1cc"/>
+    </g>
+    <g clip-path="url(#before-shot)">
+      <image href="ui-before.jpeg" x="-907" y="-267" width="2626" height="1464" preserveAspectRatio="none"/>
+    </g>
+    <rect x="64" y="248" width="684" height="440" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3"/>
+
+    <path d="M756 347C816 372 838 418 862 470" fill="none" stroke="#168ad1" stroke-width="4" marker-end="url(#arrow-blue)"/>
+    <g transform="translate(792 258)">
+      <path d="M22 0C10 0 0 10 0 22c0 18 22 42 22 42s22-24 22-42C44 10 34 0 22 0Z" fill="#168ad1"/>
+      <text x="22" y="30" text-anchor="middle" font-size="22" font-weight="800" fill="#ffffff">1</text>
+      <rect x="62" y="5" width="278" height="50" rx="12" fill="#ffffff"/>
+      <text x="82" y="39" font-size="30" font-weight="800" fill="#202326">同义操作抢夺注意力</text>
+    </g>
+    <rect x="792" y="342" width="344" height="230" rx="18" fill="#ffffff"/>
+    <text x="818" y="382" font-size="23" font-weight="800" fill="#202326">第一版的问题</text>
+    <text x="818" y="424" font-size="21" fill="#5f6469">「传送」与「精准坐标传送」</text>
+    <text x="818" y="457" font-size="21" fill="#5f6469">都在表达同一类结果。</text>
+    <text x="818" y="504" font-size="21" fill="#5f6469">后者更大、更靠近玩家习惯</text>
+    <text x="818" y="537" font-size="21" fill="#5f6469">确认操作的位置。</text>
+
+    <!-- 2 / explanation -->
+    <g transform="translate(64 742)">
+      <path d="M22 0C10 0 0 10 0 22c0 18 22 42 22 42s22-24 22-42C44 10 34 0 22 0Z" fill="#168ad1"/>
+      <text x="22" y="30" text-anchor="middle" font-size="22" font-weight="800" fill="#ffffff">2</text>
+      <rect x="62" y="5" width="308" height="50" rx="12" fill="#ffffff"/>
+      <text x="82" y="39" font-size="30" font-weight="800" fill="#202326">视觉层级改变了含义</text>
+    </g>
+    <rect x="64" y="828" width="520" height="322" rx="18" fill="#ffffff"/>
+    <text x="92" y="874" font-size="22" font-weight="800" fill="#168ad1">玩家的自然判断</text>
+    <text x="92" y="918" font-size="22" fill="#4f555a">底部 + 更宽 + 带“传送”</text>
+    <text x="92" y="953" font-size="22" fill="#4f555a">≈ 确认当前选中的目的地</text>
+    <path d="M92 984H550" stroke="#dddcd7" stroke-width="2"/>
+    <text x="92" y="1028" font-size="22" font-weight="800" fill="#ef6c2f">实际发生的事</text>
+    <text x="92" y="1072" font-size="22" fill="#4f555a">玩家被带入另一套坐标输入流程。</text>
+    <text x="92" y="1107" font-size="22" fill="#4f555a">误触不是粗心，而是界面给错了暗示。</text>
+
+    <path d="M588 994C610 976 618 958 628 938" fill="none" stroke="#ef6c2f" stroke-width="4" marker-end="url(#arrow-orange)"/>
+    <g filter="url(#soft-shadow)"><rect x="624" y="910" width="512" height="356" rx="18" fill="#d2d1cc"/></g>
+    <g clip-path="url(#coord-shot)">
+      <image href="../../../assets/readme/screenshots/visited-map-picker.jpg" x="-174" y="447" width="2112" height="1220" preserveAspectRatio="none"/>
+    </g>
+    <rect x="624" y="910" width="512" height="356" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3"/>
+    <rect x="650" y="1178" width="270" height="56" rx="12" fill="#202326" fill-opacity="0.86"/>
+    <text x="676" y="1215" font-size="22" font-weight="700" fill="#ffffff">另一项任务，不是确认</text>
+
+    <!-- 3 / adjusted UI -->
+    <g filter="url(#soft-shadow)"><rect x="64" y="1280" width="552" height="366" rx="18" fill="#d2d1cc"/></g>
+    <g clip-path="url(#bookmark-shot)">
+      <image href="../../../assets/readme/screenshots/personal-bookmarks.jpg" x="-741" y="788" width="2162" height="1296" preserveAspectRatio="none"/>
+    </g>
+    <rect x="64" y="1280" width="552" height="366" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3"/>
+    <path d="M614 1530C670 1518 696 1486 724 1440" fill="none" stroke="#168ad1" stroke-width="4" marker-end="url(#arrow-blue)"/>
+
+    <g transform="translate(678 1290)">
+      <path d="M22 0C10 0 0 10 0 22c0 18 22 42 22 42s22-24 22-42C44 10 34 0 22 0Z" fill="#ef6c2f"/>
+      <text x="22" y="30" text-anchor="middle" font-size="22" font-weight="800" fill="#ffffff">3</text>
+      <rect x="62" y="5" width="326" height="50" rx="12" fill="#ffffff"/>
+      <text x="82" y="39" font-size="30" font-weight="800" fill="#202326">把主操作说具体</text>
+    </g>
+    <rect x="678" y="1374" width="458" height="226" rx="18" fill="#ffffff"/>
+    <text x="706" y="1418" font-size="22" font-weight="800" fill="#168ad1">调整后的界面</text>
+    <text x="706" y="1461" font-size="21" fill="#50565b">精准坐标成为独立任务；</text>
+    <text x="706" y="1495" font-size="21" fill="#50565b">列表页主按钮直接写出目标地点。</text>
+    <text x="706" y="1543" font-size="21" font-weight="800" fill="#ef6c2f">从“传送”变成“传送到哪里”</text>
+    <text x="706" y="1577" font-size="21" fill="#50565b">玩家无需猜测按钮会把自己带去哪。</text>
+
+    <!-- conclusion -->
+    <rect x="224" y="1655" width="752" height="88" rx="18" fill="#ffffff"/>
+    <text x="252" y="1690" font-size="22" font-weight="800" fill="#168ad1">结论</text>
+    <text x="326" y="1690" font-size="22" fill="#3f454a">UI 不只是摆放按钮，也在定义玩家对下一步的预期。</text>
+    <text x="252" y="1724" font-size="20" fill="#6a6f73">好的交互层级，会让正确操作看起来就是唯一自然的选择。</text>
+  </g>
+</svg>
