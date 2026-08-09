@@ -1,11 +1,14 @@
 {
   "Name": "Warp Bookmarks",
-  "Author": "Mercury",
-  "Version": "0.5.3",
+  "Author": "March3tar",
+  "Version": "1.0.0",
   "Description": "Personal teleport bookmarks, safe home travel, standard destinations, and quick return.",
   "UniqueID": "Mercury.WarpBookmarks",
   "EntryDll": "WarpBookmarks.dll",
   "MinimumApiVersion": "4.5.2",
+  "UpdateKeys": [
+    "Nexus:50310"
+  ],
   "Dependencies": [
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",

@@ -112,4 +112,4 @@ if ($Install) {
     Write-Host "Installed or updated Warp Bookmarks at: $TargetPath"
 }
 
-Write-Host "See docs\WINDOWS_TEST_0.5.3.md for the combined isolation check."
+Write-Host "See docs\WINDOWS_RELEASE_TEST_1.0.0.md for the final release check."

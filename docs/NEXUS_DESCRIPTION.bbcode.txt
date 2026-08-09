@@ -1,0 +1,46 @@
+Warp Bookmarks is a lightweight travel convenience mod with Simplified Chinese and English support. Save personal locations in a searchable parchment-style travel book, return home or to your previous departure point, and teleport using map tile coordinates. Each player keeps an independent bookmark list in single-player and online multiplayer.
+
+[size=5]Features[/size]
+[list]
+[*]Open the travel book with [font=Courier New]K[/font], or quickly save your current position with [font=Courier New]Shift + K[/font].
+[*]Create, name, search, favorite, rename, and delete personal bookmarks.
+[*]Return to the outside of your own farmhouse or multiplayer cabin.
+[*]Use the five standard vanilla Warp Totem destinations: Farm, Mountains, Beach, Desert, and Ginger Island.
+[*]Return to the departure point of your previous successful Warp Bookmarks teleport.
+[*]Select a visited map and enter X/Y tile coordinates, then preview, teleport, or save the destination.
+[*]Automatically search within three tiles when the requested tile is blocked.
+[*]Keep custom bookmarks separate for each save and multiplayer player.
+[*]Configure shortcuts through Generic Mod Config Menu when it is installed.
+[/list]
+
+The mod adds no physical item, crafting recipe, charge, resource cost, cooldown, or upgrade system.
+
+[size=5]Install[/size]
+[list=1]
+[*][url=https://smapi.io]Install SMAPI[/url] 4.5.2 or later.
+[*]Download Warp Bookmarks and unzip it into [font=Courier New]Stardew Valley/Mods[/font].
+[*]Confirm the path is [font=Courier New]Mods/WarpBookmarks/WarpBookmarks.dll[/font].
+[*]Run the game using SMAPI.
+[/list]
+
+[size=5]How to use[/size]
+Press [font=Courier New]K[/font] to open or close the travel book. Press [font=Courier New]Shift + K[/font] to immediately save your current location. Both shortcuts can be changed through Generic Mod Config Menu or [font=Courier New]config.json[/font].
+
+Choose a bookmark or built-in destination and use the main button in the lower-right corner to teleport. Use the coordinate tool to search visited maps and enter X/Y tile coordinates.
+
+[size=5]Compatibility[/size]
+[list]
+[*]Built and tested with Stardew Valley 1.6.15 and SMAPI 4.5.2 on Windows 11.
+[*]Tested in single-player and online multiplayer. Bookmarks are personal and are not shared with other players.
+[*]Generic Mod Config Menu is optional.
+[*]Designed around stable game location names and expected to work with many conventional custom maps; universal compatibility with every expansion mod is not guaranteed.
+[/list]
+
+[size=5]Known limitation[/size]
+The Left and Right arrow keys don't move the caret in the bookmark rename field. Backspace and retyping still work, and this doesn't affect saving or teleporting.
+
+[size=5]简体中文[/size]
+《传送书签》是一个轻量的移动便利 Mod。按 [font=Courier New]K[/font] 打开传送手册，按 [font=Courier New]Shift + K[/font] 快速记录当前位置。支持个人书签、返回住宅、上一个位置、五个原版图腾地点以及地图 X/Y 格子坐标传送。单人和在线联机玩家的书签数据互相隔离。
+
+[size=5]Credits[/size]
+Product decisions, scope, and Windows playtesting were led by March3tar. OpenAI Codex was used to assist with code implementation and mod-page copy.

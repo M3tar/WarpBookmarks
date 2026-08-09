@@ -2,7 +2,7 @@
 
 ## 1. 已知目标环境
 
-沿用 `/Users/mercury/Claude+Codex+Code/MultiplayerNpcLocator` 已经验证过的环境：
+沿用参考项目 `MultiplayerNpcLocator` 已经验证过的环境：
 
 | 项目 | 目标值 |
 |---|---|
@@ -140,4 +140,3 @@
 - 单人和联机关键界面截图；
 - 测试当天是否为普通日、雨天、节日或事件日；
 - 使用的存档类型、地图 Mod 和双方安装组合。
-
