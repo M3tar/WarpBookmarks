@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+  <title id="title">Warp Bookmarks — searchable travel for Stardew Valley</title>
+  <desc id="desc">A parchment travel-book title panel beside a real in-game screenshot of the Warp Bookmarks menu.</desc>
+  <defs>
+    <linearGradient id="scene-shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2b160e" stop-opacity=".98"/>
+      <stop offset=".58" stop-color="#2b160e" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#2b160e" stop-opacity=".08"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1bd"/>
+      <stop offset="1" stop-color="#e9c77d"/>
+    </linearGradient>
+    <pattern id="paper-speckle" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="6" r="1.2" fill="#7b4928" opacity=".12"/>
+      <circle cx="22" cy="18" r=".8" fill="#7b4928" opacity=".10"/>
+    </pattern>
+    <clipPath id="frame"><rect x="0" y="0" width="1200" height="480" rx="28"/></clipPath>
+    <clipPath id="shot"><rect x="512" y="42" width="648" height="396" rx="18"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="480" fill="#2b160e"/>
+    <image href="../screenshots/personal-bookmarks.jpg" x="430" y="0" width="770" height="480" preserveAspectRatio="xMidYMid slice"/>
+    <rect x="390" width="810" height="480" fill="url(#scene-shade)"/>
+
+    <g id="screenshot-proof">
+      <rect x="501" y="31" width="670" height="418" rx="23" fill="#1c0f0b" opacity=".62"/>
+      <image href="../screenshots/ginger-island-locked-destinations.jpg" x="512" y="42" width="648" height="396" preserveAspectRatio="xMidYMid slice" clip-path="url(#shot)"/>
+      <rect x="512" y="42" width="648" height="396" rx="18" fill="none" stroke="#f6d58e" stroke-width="3"/>
+      <g transform="translate(1082 58)">
+        <path d="M0 0h50v76l-25-14-25 14z" fill="#b84b32"/>
+        <path d="M9 12h32" stroke="#ffdca0" stroke-width="4" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <g id="title-panel">
+      <path d="M0 0h492l44 40v400l-44 40H0z" fill="url(#paper)"/>
+      <path d="M0 0h492l44 40v400l-44 40H0z" fill="url(#paper-speckle)"/>
+      <path d="M490 0v480" stroke="#8f552e" stroke-width="3" opacity=".55"/>
+      <path d="M502 24v432" stroke="#8f552e" stroke-width="1.5" opacity=".35"/>
+
+      <g transform="translate(58 54)">
+        <text x="0" y="0" fill="#8b4a2d" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700" letter-spacing="2">STARDEW VALLEY 1.6  ·  SMAPI</text>
+        <text x="0" y="75" fill="#3b2116" font-family="Georgia, Songti SC, serif" font-size="62" font-weight="700">Warp</text>
+        <text x="0" y="136" fill="#3b2116" font-family="Georgia, Songti SC, serif" font-size="62" font-weight="700">Bookmarks</text>
+        <text x="2" y="180" fill="#7a4028" font-family="Songti SC, Georgia, serif" font-size="28" font-weight="700">传送书签</text>
+
+        <path d="M0 207h366" stroke="#a96a3d" stroke-width="2"/>
+        <circle cx="10" cy="231" r="6" fill="#b84b32"/>
+        <text x="29" y="239" fill="#55301f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="22">保存常去地点</text>
+        <circle cx="10" cy="273" r="6" fill="#b84b32"/>
+        <text x="29" y="281" fill="#55301f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="22">搜索你的旅行手册</text>
+        <circle cx="10" cy="315" r="6" fill="#b84b32"/>
+        <text x="29" y="323" fill="#55301f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="22">安全抵达，随时返回</text>
+
+        <g transform="translate(0 349)">
+          <rect width="118" height="44" rx="10" fill="#4a2c20"/>
+          <text x="59" y="29" text-anchor="middle" fill="#fff0bc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" font-weight="700">K · OPEN</text>
+          <rect x="130" width="188" height="44" rx="10" fill="#b7663c"/>
+          <text x="224" y="29" text-anchor="middle" fill="#fff8dc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" font-weight="700">SHIFT+K · SAVE</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
