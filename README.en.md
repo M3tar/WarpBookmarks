@@ -42,6 +42,12 @@ The map picker lists locations the current player has already visited. Choose a 
   <img src="./assets/readme/screenshots/v1.0.1/en/visited-map-picker.jpg" width="100%" alt="The English exact-coordinate dialog with its searchable visited-map dropdown expanded">
 </p>
 
+After previewing the coordinates, the dialog shows the resolved safe destination before anything happens. You can warp immediately or save the location as a personal bookmark for quick access later.
+
+<p align="center">
+  <img src="./assets/readme/screenshots/v1.0.1/en/exact-coordinates.jpg" width="100%" alt="The English exact-coordinate dialog showing coordinate entry, the resolved safe destination, and Preview, Save bookmark, and Warp actions">
+</p>
+
 ## Requirements
 
 - Stardew Valley 1.6.15 or later in the 1.6 line;
