@@ -68,7 +68,7 @@
     <path d="M588 994C610 976 618 958 628 938" fill="none" stroke="#ef6c2f" stroke-width="4" marker-end="url(#arrow-orange)"/>
     <g filter="url(#soft-shadow)"><rect x="624" y="910" width="512" height="356" rx="18" fill="#d2d1cc"/></g>
     <g clip-path="url(#coord-shot)">
-      <image href="../../../assets/readme/screenshots/visited-map-picker.jpg" x="-174" y="447" width="2112" height="1220" preserveAspectRatio="none"/>
+      <image href="../../../assets/readme/source/screenshots/v1.0.0/zh-cn/visited-map-picker.jpg" x="-174" y="447" width="2112" height="1220" preserveAspectRatio="none"/>
     </g>
     <rect x="624" y="910" width="512" height="356" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3"/>
     <rect x="650" y="1178" width="270" height="56" rx="12" fill="#202326" fill-opacity="0.86"/>
@@ -77,7 +77,7 @@
     <!-- 3 / adjusted UI -->
     <g filter="url(#soft-shadow)"><rect x="64" y="1280" width="552" height="366" rx="18" fill="#d2d1cc"/></g>
     <g clip-path="url(#bookmark-shot)">
-      <image href="../../../assets/readme/screenshots/personal-bookmarks.jpg" x="-741" y="788" width="2162" height="1296" preserveAspectRatio="none"/>
+      <image href="../../../assets/readme/source/screenshots/v1.0.0/zh-cn/personal-bookmarks.jpg" x="-741" y="788" width="2162" height="1296" preserveAspectRatio="none"/>
     </g>
     <rect x="64" y="1280" width="552" height="366" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3"/>
     <path d="M614 1530C670 1518 696 1486 724 1440" fill="none" stroke="#168ad1" stroke-width="4" marker-end="url(#arrow-blue)"/>

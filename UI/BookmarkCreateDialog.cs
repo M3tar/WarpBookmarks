@@ -19,6 +19,7 @@ internal sealed class BookmarkCreateDialog : IClickableMenu
     private readonly Action<string> save;
     private readonly Action cancel;
     private readonly Func<string, string> translate;
+    private readonly MultilingualTextRenderer textRenderer;
     private readonly Texture2D parchmentTexture;
     private readonly TextBox inputBox;
 
@@ -30,7 +31,8 @@ internal sealed class BookmarkCreateDialog : IClickableMenu
         string suggestedName,
         Action<string> save,
         Action cancel,
-        Func<string, string> translate
+        Func<string, string> translate,
+        MultilingualTextRenderer textRenderer
     )
         : base(
             (Game1.uiViewport.Width - DialogWidth) / 2,
@@ -45,9 +47,10 @@ internal sealed class BookmarkCreateDialog : IClickableMenu
         this.save = save;
         this.cancel = cancel;
         this.translate = translate;
+        this.textRenderer = textRenderer;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
         Texture2D textBoxTexture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
-        this.inputBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.inputBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
             X = this.xPositionOnScreen + 70,
             Y = this.yPositionOnScreen + 164,
@@ -126,10 +129,11 @@ internal sealed class BookmarkCreateDialog : IClickableMenu
             .Replace("{{map}}", this.location.LocationName)
             .Replace("{{x}}", this.location.TileX.ToString())
             .Replace("{{y}}", this.location.TileY.ToString());
-        b.DrawString(Game1.smallFont, locationText, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 91), Color.DarkSlateGray);
+        this.textRenderer.DrawString(b, locationText, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 91), Color.DarkSlateGray, Game1.smallFont);
         b.DrawString(Game1.smallFont, this.translate("create.name-label"), new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 132), Game1.textColor);
         this.inputBox.Draw(b);
-        b.DrawString(Game1.smallFont, this.translate("create.suggestion-label") + this.suggestedName, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 217), Color.DarkSlateGray);
+        string suggestionText = this.textRenderer.FitText(this.translate("create.suggestion-label") + this.suggestedName, DialogWidth - 140, Game1.smallFont);
+        this.textRenderer.DrawString(b, suggestionText, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 217), Color.DarkSlateGray, Game1.smallFont);
         this.DrawButton(b, this.SuggestionButton, this.translate("create.use-suggestion"), enabled: true);
         this.DrawButton(b, this.SaveButton, this.translate("create.save"), enabled: this.CanSave);
         b.DrawString(Game1.smallFont, this.translate("create.input-hint"), new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 318), Color.DarkSlateGray);

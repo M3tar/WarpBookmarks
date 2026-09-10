@@ -1,9 +1,11 @@
-Warp Bookmarks is a lightweight travel convenience mod with Simplified Chinese and English support. Save personal locations in a searchable parchment-style travel book, return home or to your previous departure point, and teleport using map tile coordinates. Each player keeps an independent bookmark list in single-player and online multiplayer.
+Warp Bookmarks is a lightweight travel convenience mod with complete Simplified Chinese and English interfaces. Save visited, accessible locations in a searchable parchment-style travel book and teleport back to them quickly and safely, return home or to your previous departure point, or enter exact map tile coordinates. Each player keeps an independent bookmark list in single-player and online multiplayer.
 
 [size=5]Features[/size]
 [list]
 [*]Open the travel book with [font=Courier New]K[/font], or quickly save your current position with [font=Courier New]Shift + K[/font].
-[*]Create, name, search, favorite, rename, and delete personal bookmarks.
+[*]Use the complete interface in Simplified Chinese or English; saved Chinese bookmark names remain readable after switching languages.
+[*]Save visited, accessible locations and teleport back to them quickly and safely.
+[*]Create, name, search, pin to Quick Access, rename, and delete personal bookmarks.
 [*]Return to the outside of your own farmhouse or multiplayer cabin.
 [*]Use the five standard vanilla Warp Totem destinations: Farm, Mountains, Beach, Desert, and Ginger Island.
 [*]Return to the departure point of your previous successful Warp Bookmarks teleport.
@@ -40,7 +42,7 @@ Choose a bookmark or built-in destination and use the main button in the lower-r
 The Left and Right arrow keys don't move the caret in the bookmark rename field. Backspace and retyping still work, and this doesn't affect saving or teleporting.
 
 [size=5]简体中文[/size]
-《传送书签》是一个轻量的移动便利 Mod。按 [font=Courier New]K[/font] 打开传送手册，按 [font=Courier New]Shift + K[/font] 快速记录当前位置。支持个人书签、返回住宅、上一个位置、五个原版图腾地点以及地图 X/Y 格子坐标传送。单人和在线联机玩家的书签数据互相隔离。
+《传送书签》支持完整的简体中文与英文界面。按 [font=Courier New]K[/font] 打开传送手册，按 [font=Courier New]Shift + K[/font] 快速记录当前位置；将已经到访且允许进入的地点保存为书签后，可以快速安全地再次传送。支持个人书签、返回住宅、上一个位置、五个原版图腾地点以及地图 X/Y 格子坐标传送。切换语言后已有中文书签名仍可阅读，单人和在线联机玩家的书签数据互相隔离。
 
 [size=5]Credits[/size]
 Product decisions, scope, and Windows playtesting were led by March3tar. OpenAI Codex was used to assist with code implementation and mod-page copy.

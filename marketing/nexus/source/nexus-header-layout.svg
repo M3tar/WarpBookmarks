@@ -16,7 +16,7 @@
     <clipPath id="screen"><rect x="824" y="40" width="526" height="320" rx="12"/></clipPath>
   </defs>
   <g clip-path="url(#canvas)">
-    <image href="../../../assets/readme/screenshots/visited-map-picker.jpg" width="1400" height="400" preserveAspectRatio="xMidYMid slice"/>
+    <image href="../../../assets/readme/source/screenshots/v1.0.0/zh-cn/visited-map-picker.jpg" width="1400" height="400" preserveAspectRatio="xMidYMid slice"/>
     <rect width="1400" height="400" fill="url(#shade)"/>
 
     <g id="title-block" transform="translate(52 42)">
@@ -36,7 +36,7 @@
 
     <g id="interface-proof">
       <rect x="812" y="28" width="550" height="344" rx="18" fill="#1b0f0a" opacity=".55"/>
-      <image href="../../../assets/readme/screenshots/ginger-island-locked-destinations.jpg" x="824" y="40" width="526" height="320" preserveAspectRatio="xMidYMid slice" clip-path="url(#screen)"/>
+      <image href="../../../assets/readme/source/screenshots/v1.0.0/zh-cn/ginger-island-locked-destinations.jpg" x="824" y="40" width="526" height="320" preserveAspectRatio="xMidYMid slice" clip-path="url(#screen)"/>
       <rect x="824" y="40" width="526" height="320" rx="12" fill="none" stroke="#f2cf83" stroke-width="3"/>
       <path d="M1284 40h48v68l-24-14-24 14z" fill="#b84b32"/>
     </g>

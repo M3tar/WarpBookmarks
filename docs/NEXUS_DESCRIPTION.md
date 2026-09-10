@@ -1,19 +1,21 @@
-# Nexus Mods 页面文案草案
+# Nexus Mods 页面文案
 
 ## 简短描述
 
-用可搜索的羊皮纸传送手册保存个人地点，快速回家、返回上一个位置，或输入地图格子坐标传送。支持单人和在线联机个人书签。
+支持简体中文与英文。把已经到访且允许进入的地点保存进可搜索的羊皮纸传送手册，快速安全地返回住宅、上一个位置或任意书签地点；也可输入地图格子坐标精准传送。支持单人和在线联机个人书签。
 
-Save personal locations in a searchable parchment-style travel book. Return home, revisit your previous departure point, or teleport using map tile coordinates. Supports independent personal bookmarks in single-player and online multiplayer.
+Available in Simplified Chinese and English. Save visited, accessible locations in a searchable parchment-style travel book, then teleport safely to any bookmark, return home or to your previous departure point, or enter exact map tile coordinates. Supports independent personal bookmarks in single-player and online multiplayer.
 
 ## 中文详细说明
 
-《传送书签》是一个轻量的移动便利 Mod。它不增加实体道具、材料消耗、充能或升级系统，只提供一本可搜索的个人传送手册。
+《传送书签》是一个支持简体中文与英文界面的轻量移动便利 Mod。把已经到访且允许进入的地点保存为书签后，只需几秒即可快速安全传送；也可以选择已到访地图并输入格子坐标，前往更精确的位置。它不增加实体道具、材料消耗、充能或升级系统，只提供一本可搜索的个人传送手册。
 
 主要功能：
 
 - `K` 打开手册，`Shift + K` 快速记录当前位置；
-- 创建、命名、搜索、收藏、重命名和删除个人书签；
+- 完整支持简体中文与英文界面，切换语言后已有中文书签名仍可阅读；
+- 将已经到访且允许进入的地点保存为书签，随后快速安全传送；
+- 创建、命名、搜索、加入常用、重命名和删除个人书签；
 - 返回自己的农舍或联机小屋门外；
 - 使用农场、山区、海滩、沙漠和姜岛五个默认地点；
 - 在两个地点之间使用“上一个位置”往返；
@@ -25,12 +27,14 @@ Save personal locations in a searchable parchment-style travel book. Return home
 
 ## English description
 
-Warp Bookmarks is a lightweight travel convenience mod. It adds no physical item, crafting recipe, charge, resource cost, cooldown, or upgrade system. Instead, it provides a searchable personal travel book.
+Warp Bookmarks is a lightweight travel convenience mod with complete Simplified Chinese and English interfaces. Save a visited, accessible location as a bookmark and reach it again in seconds, or select a visited map and enter exact tile coordinates. It adds no physical item, crafting recipe, charge, resource cost, cooldown, or upgrade system. Instead, it provides a searchable personal travel book.
 
 Features:
 
 - Open the book with `K`; quickly save your current position with `Shift + K`.
-- Create, name, search, favorite, rename, and delete personal bookmarks.
+- Use the complete interface in Simplified Chinese or English; saved Chinese bookmark names remain readable after switching languages.
+- Save visited, accessible locations and teleport back to them quickly and safely.
+- Create, name, search, pin to Quick Access, rename, and delete personal bookmarks.
 - Return to the outside of your own farmhouse or multiplayer cabin.
 - Use the five standard vanilla Warp Totem destinations.
 - Travel back to the departure point of your previous successful teleport.

@@ -19,7 +19,8 @@ public sealed class ModEntry : Mod
     private BookmarkRepository? repository;
     private DestinationCatalog? catalog;
     private WarpService? warpService;
-    private DestinationCategory lastMenuCategory = DestinationCategory.Common;
+    private MultilingualTextRenderer? textRenderer;
+    private DestinationCategory lastMenuCategory = DestinationCategory.QuickAccess;
 
     public override void Entry(IModHelper helper)
     {
@@ -29,6 +30,7 @@ public sealed class ModEntry : Mod
         HomeLocationResolver homeResolver = new(this.Monitor);
         this.catalog = new DestinationCatalog(this.repository, homeResolver, this.Translate);
         this.warpService = new WarpService(this.repository, this.Monitor, this.Translate);
+        this.textRenderer = new MultilingualTextRenderer(this.Monitor);
         this.Monitor.Log(
             $"Active shortcuts: open={this.config.OpenMenuKey}; create={this.config.CreateBookmarkKey}.",
             LogLevel.Info
@@ -172,14 +174,14 @@ public sealed class ModEntry : Mod
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
-        this.lastMenuCategory = DestinationCategory.Common;
+        this.lastMenuCategory = DestinationCategory.QuickAccess;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
     }
 
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
-        this.lastMenuCategory = DestinationCategory.Common;
+        this.lastMenuCategory = DestinationCategory.QuickAccess;
         this.repository?.ResetCache();
         this.warpService?.ClearPrevious();
     }
@@ -227,7 +229,7 @@ public sealed class ModEntry : Mod
 
     private void OpenMenu()
     {
-        if (this.config is null || this.catalog is null || this.repository is null || this.warpService is null)
+        if (this.config is null || this.catalog is null || this.repository is null || this.warpService is null || this.textRenderer is null)
             return;
         if (!LocationPolicy.CanUseTeleportNow(out string reasonKey))
         {
@@ -248,6 +250,7 @@ public sealed class ModEntry : Mod
             this.lastMenuCategory,
             category => this.lastMenuCategory = category,
             this.Translate,
+            this.textRenderer,
             this.Helper.Translation.Get("menu.shortcuts", new
             {
                 open = this.config.OpenMenuKey,
@@ -301,7 +304,8 @@ public sealed class ModEntry : Mod
             suggestedName,
             name => this.SaveNamedBookmark(location, name),
             this.OpenMenu,
-            this.Translate
+            this.Translate,
+            this.textRenderer!
         );
     }
 
@@ -365,7 +369,8 @@ public sealed class ModEntry : Mod
                 this.OpenMenu();
             },
             this.OpenMenu,
-            this.Translate
+            this.Translate,
+            this.textRenderer!
         );
     }
 
@@ -392,7 +397,8 @@ public sealed class ModEntry : Mod
             this.warpService,
             this.Translate,
             this.OpenMenu,
-            this.OpenCreateCoordinateBookmarkDialog
+            this.OpenCreateCoordinateBookmarkDialog,
+            this.textRenderer!
         );
     }
 
@@ -411,7 +417,8 @@ public sealed class ModEntry : Mod
             destination.Name,
             name => this.SaveNamedBookmark(location, name),
             this.OpenCoordinateDialog,
-            this.Translate
+            this.Translate,
+            this.textRenderer!
         );
     }
 

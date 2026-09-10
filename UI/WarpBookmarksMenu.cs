@@ -15,12 +15,23 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private const int RowHeight = 48;
     private const int ActionPadding = 18;
     private const int ActionGap = 10;
+    private const int PinnedIndicatorWidth = 32;
     private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
+    private static readonly string[] PinnedStarPattern =
+    {
+        "..#..",
+        "#.#.#",
+        ".###.",
+        "#####",
+        ".###.",
+        ".#.#.",
+        "#...#"
+    };
 
     private readonly List<WarpDestination> allDestinations;
     private readonly List<WarpDestination> destinations;
     private readonly Action<WarpDestination> warp;
-    private readonly Action<WarpDestination, bool> setFavorite;
+    private readonly Action<WarpDestination, bool> setPinned;
     private readonly Action<WarpDestination> remove;
     private readonly Action<WarpDestination> restoreHidden;
     private readonly Action<WarpDestination> edit;
@@ -29,6 +40,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private readonly Action recordCurrent;
     private readonly Action<DestinationCategory> categoryChanged;
     private readonly Func<string, string> translate;
+    private readonly MultilingualTextRenderer textRenderer;
     private readonly string shortcutText;
     private readonly Texture2D parchmentTexture;
     private readonly TextBox searchBox;
@@ -38,14 +50,15 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     private string? pendingRemoveId;
     private DestinationCategory selectedCategory;
 
-    private Rectangle CategoryArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, 420, 36);
+    private Rectangle CategoryArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 86, this.width - 72, 36);
     private Rectangle ListArea => new(this.xPositionOnScreen + 36, this.yPositionOnScreen + 132, 420, this.height - 220);
-    private Rectangle ListRowsArea => new(this.ListArea.X, this.ListArea.Y, this.ListArea.Width - 18, this.ListArea.Height);
-    private Rectangle ListScrollbarTrack => new(this.ListArea.Right - 12, this.ListArea.Y + 4, 9, this.ListArea.Height - 12);
-    private Rectangle DetailArea => new(this.xPositionOnScreen + 478, this.yPositionOnScreen + 86, this.width - 514, this.height - 174);
+    private int ListRowsHeight => this.VisibleRows * RowHeight - 4;
+    private Rectangle ListRowsArea => new(this.ListArea.X, this.ListArea.Y, this.ListArea.Width - 18, this.ListRowsHeight);
+    private Rectangle ListScrollbarTrack => new(this.ListArea.Right - 12, this.ListArea.Y + 4, 9, this.ListRowsHeight - 4);
+    private Rectangle DetailArea => new(this.xPositionOnScreen + 478, this.yPositionOnScreen + 132, this.width - 514, this.height - 220);
     private int ThreeActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap * 2) / 3;
     private int TwoActionButtonWidth => (this.DetailArea.Width - ActionPadding * 2 - ActionGap) / 2;
-    private Rectangle BookmarkFavoriteButton => this.GetThreeActionButtonBounds(0);
+    private Rectangle BookmarkPinButton => this.GetThreeActionButtonBounds(0);
     private Rectangle BookmarkEditButton => this.GetThreeActionButtonBounds(1);
     private Rectangle BookmarkRemoveButton => this.GetThreeActionButtonBounds(2);
     private Rectangle ContextLeftButton => this.GetTwoActionButtonBounds(0);
@@ -59,7 +72,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     public WarpBookmarksMenu(
         IEnumerable<WarpDestination> destinations,
         Action<WarpDestination> warp,
-        Action<WarpDestination, bool> setFavorite,
+        Action<WarpDestination, bool> setPinned,
         Action<WarpDestination> remove,
         Action<WarpDestination> restoreHidden,
         Action<WarpDestination> edit,
@@ -69,6 +82,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         DestinationCategory initialCategory,
         Action<DestinationCategory> categoryChanged,
         Func<string, string> translate,
+        MultilingualTextRenderer textRenderer,
         string shortcutText
     )
         : base(
@@ -82,7 +96,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.allDestinations = destinations.ToList();
         this.destinations = new List<WarpDestination>(this.allDestinations);
         this.warp = warp;
-        this.setFavorite = setFavorite;
+        this.setPinned = setPinned;
         this.remove = remove;
         this.restoreHidden = restoreHidden;
         this.edit = edit;
@@ -92,14 +106,16 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         this.selectedCategory = initialCategory;
         this.categoryChanged = categoryChanged;
         this.translate = translate;
+        this.textRenderer = textRenderer;
         this.shortcutText = shortcutText;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
         Texture2D textBoxTexture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
-        this.searchBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.searchBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
-            X = this.xPositionOnScreen + 594,
+            X = this.xPositionOnScreen + 570,
             Y = this.yPositionOnScreen + 20,
-            Width = 260,
+            Width = 290,
+            Placeholder = this.translate("menu.search"),
             Selected = false
         };
         Game1.keyboardDispatcher.Subscriber = this.searchBox;
@@ -192,8 +208,8 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
         if (selected.Kind == WarpDestinationKind.Bookmark)
         {
-            if (this.BookmarkFavoriteButton.Contains(x, y))
-                this.ToggleFavorite(selected);
+            if (this.BookmarkPinButton.Contains(x, y))
+                this.TogglePinned(selected);
             else if (this.BookmarkEditButton.Contains(x, y))
                 this.edit(selected);
             else if (this.BookmarkRemoveButton.Contains(x, y))
@@ -219,7 +235,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (selected.Kind == WarpDestinationKind.Default)
         {
             if (this.ContextLeftButton.Contains(x, y))
-                this.ToggleFavorite(selected);
+                this.TogglePinned(selected);
             else if (this.ContextRightButton.Contains(x, y))
                 this.HandleRemove(selected);
         }
@@ -318,7 +334,6 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             Color.White
         );
         b.DrawString(Game1.dialogueFont, this.translate("menu.title"), new Vector2(this.xPositionOnScreen + 36, this.yPositionOnScreen + 24), Game1.textColor);
-        b.DrawString(Game1.smallFont, this.translate("menu.search"), new Vector2(this.searchBox.X - 70, this.searchBox.Y + 12), Game1.textColor);
         this.searchBox.Draw(b);
         this.DrawCategories(b);
 
@@ -333,14 +348,9 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
             Rectangle bounds = new(this.ListRowsArea.X, this.ListRowsArea.Y + row * RowHeight, this.ListRowsArea.Width, RowHeight - 4);
             Color fill = index == this.selectedIndex ? new Color(196, 135, 70) * 0.55f : new Color(120, 78, 48) * 0.10f;
             b.Draw(Game1.staminaRect, bounds, fill);
-            string marker = destination.IsFavorite ? "★ " : destination.Kind switch
-            {
-                WarpDestinationKind.Home => "⌂ ",
-                WarpDestinationKind.Previous => "↩ ",
-                _ => "  "
-            };
-            string rowText = this.FitText(marker + destination.Name, bounds.Width - 24);
-            b.DrawString(Game1.smallFont, rowText, new Vector2(bounds.X + 12, bounds.Y + 10), Game1.textColor);
+            string rowText = this.textRenderer.FitText(destination.Name, bounds.Width - 24 - PinnedIndicatorWidth, Game1.smallFont);
+            this.textRenderer.DrawString(b, rowText, new Vector2(bounds.X + 12, bounds.Y + 10), Game1.textColor, Game1.smallFont);
+            this.DrawPinnedIndicator(b, bounds, destination.IsFavorite);
         }
         this.DrawListScrollbar(b);
 
@@ -366,13 +376,14 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         if (selected is null)
         {
             string emptyKey = this.selectedCategory == DestinationCategory.Hidden ? "menu.hidden-empty" : "menu.empty";
-            b.DrawString(Game1.smallFont, this.translate(emptyKey), new Vector2(area.X + 18, area.Y + 18), Game1.textColor);
+            string emptyText = this.textRenderer.WrapText(this.translate(emptyKey), area.Width - 36, Game1.smallFont);
+            this.textRenderer.DrawString(b, emptyText, new Vector2(area.X + 18, area.Y + 18), Game1.textColor, Game1.smallFont);
             return;
         }
 
         int y = area.Y + 18;
-        string detailName = this.FitText(selected.Name, area.Width - 36, Game1.dialogueFont);
-        b.DrawString(Game1.dialogueFont, detailName, new Vector2(area.X + 18, y), Game1.textColor);
+        string detailName = this.textRenderer.FitText(selected.Name, area.Width - 36, Game1.dialogueFont, title: true);
+        this.textRenderer.DrawString(b, detailName, new Vector2(area.X + 18, y), Game1.textColor, Game1.dialogueFont, title: true);
         y += 62;
         this.DrawDetailLine(b, "menu.location", selected.Location.DisplayName, area.X + 18, ref y);
         this.DrawDetailLine(b, "menu.internal-name", selected.Location.LocationName, area.X + 18, ref y);
@@ -381,7 +392,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
         if (selected.Kind == WarpDestinationKind.Bookmark)
         {
-            this.DrawButton(b, this.BookmarkFavoriteButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), true);
+            this.DrawButton(b, this.BookmarkPinButton, selected.IsFavorite ? this.translate("menu.unpin") : this.translate("menu.pin"), true);
             this.DrawButton(b, this.BookmarkEditButton, this.translate("menu.rename"), true);
             string removeText = this.pendingRemoveId == selected.Id ? this.translate("menu.confirm-delete") : this.translate("menu.delete");
             this.DrawButton(b, this.BookmarkRemoveButton, removeText, true);
@@ -393,7 +404,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         }
         else if (selected.Kind == WarpDestinationKind.Default)
         {
-            this.DrawButton(b, this.ContextLeftButton, selected.IsFavorite ? this.translate("menu.unfavorite") : this.translate("menu.favorite"), true);
+            this.DrawButton(b, this.ContextLeftButton, selected.IsFavorite ? this.translate("menu.unpin") : this.translate("menu.pin"), true);
             string hideText = this.pendingRemoveId == selected.Id ? this.translate("menu.confirm-hide") : this.translate("menu.hide");
             this.DrawButton(b, this.ContextRightButton, hideText, true);
         }
@@ -401,7 +412,11 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
 
     private void DrawDetailLine(SpriteBatch b, string labelKey, string value, int x, ref int y)
     {
-        b.DrawString(Game1.smallFont, $"{this.translate(labelKey)}：{value}", new Vector2(x, y), Game1.textColor);
+        string text = this.translate("menu.detail-format")
+            .Replace("{{label}}", this.translate(labelKey))
+            .Replace("{{value}}", value);
+        string fittedText = this.textRenderer.FitText(text, this.DetailArea.Width - 36, Game1.smallFont);
+        this.textRenderer.DrawString(b, fittedText, new Vector2(x, y), Game1.textColor, Game1.smallFont);
         y += 36;
     }
 
@@ -413,10 +428,10 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                 ? Color.Wheat
                 : Color.White;
         IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, tint);
-        string fittedLabel = this.FitText(label, bounds.Width - 24);
-        Vector2 size = Game1.smallFont.MeasureString(fittedLabel);
+        string fittedLabel = this.textRenderer.FitText(label, bounds.Width - 24, Game1.smallFont);
+        Vector2 size = this.textRenderer.MeasureString(fittedLabel, Game1.smallFont);
         Color textColor = !enabled ? Color.DarkGray : Game1.textColor;
-        b.DrawString(Game1.smallFont, fittedLabel, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), textColor);
+        this.textRenderer.DrawString(b, fittedLabel, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), textColor, Game1.smallFont);
     }
 
     private Rectangle GetThreeActionButtonBounds(int column)
@@ -431,14 +446,18 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         return new Rectangle(x, this.DetailArea.Bottom - 62, this.TwoActionButtonWidth, 44);
     }
 
-    private void ToggleFavorite(WarpDestination destination)
+    private void TogglePinned(WarpDestination destination)
     {
         if (destination.IsHidden || destination.Kind is not (WarpDestinationKind.Bookmark or WarpDestinationKind.Default))
             return;
 
         destination.IsFavorite = !destination.IsFavorite;
-        this.setFavorite(destination, destination.IsFavorite);
+        this.setPinned(destination, destination.IsFavorite);
         this.ApplySearchFilter();
+        Game1.addHUDMessage(new HUDMessage(
+            this.translate(destination.IsFavorite ? "hud.pinned" : "hud.unpinned"),
+            HUDMessage.newQuest_type
+        ));
         Game1.playSound("drumkit6");
     }
 
@@ -490,22 +509,36 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
         b.Draw(Game1.staminaRect, this.GetListScrollbarThumb(), new Color(120, 78, 48) * 0.62f);
     }
 
-    private string FitText(string text, int maximumWidth)
-        => this.FitText(text, maximumWidth, Game1.smallFont);
-
-    private string FitText(string text, int maximumWidth, SpriteFont font)
+    private void DrawPinnedIndicator(SpriteBatch b, Rectangle rowBounds, bool isPinned)
     {
-        if (font.MeasureString(text).X <= maximumWidth)
-            return text;
+        if (!isPinned)
+            return;
 
-        const string ellipsis = "…";
-        string shortened = text;
-        while (shortened.Length > 0
-            && font.MeasureString(shortened + ellipsis).X > maximumWidth)
+        const int pixelSize = 2;
+        int starWidth = PinnedStarPattern[0].Length * pixelSize;
+        int starHeight = PinnedStarPattern.Length * pixelSize;
+        int originX = rowBounds.Right - PinnedIndicatorWidth + (PinnedIndicatorWidth - starWidth) / 2;
+        int originY = rowBounds.Center.Y - starHeight / 2;
+        this.DrawPixelStar(b, originX + 1, originY + 1, pixelSize, new Color(92, 55, 24) * 0.35f);
+        this.DrawPixelStar(b, originX, originY, pixelSize, new Color(218, 154, 45));
+    }
+
+    private void DrawPixelStar(SpriteBatch b, int originX, int originY, int pixelSize, Color color)
+    {
+        for (int row = 0; row < PinnedStarPattern.Length; row++)
         {
-            shortened = shortened[..^1];
+            for (int column = 0; column < PinnedStarPattern[row].Length; column++)
+            {
+                if (PinnedStarPattern[row][column] == '#')
+                {
+                    b.Draw(
+                        Game1.staminaRect,
+                        new Rectangle(originX + column * pixelSize, originY + row * pixelSize, pixelSize, pixelSize),
+                        color
+                    );
+                }
+            }
         }
-        return shortened.Length == 0 ? ellipsis : shortened + ellipsis;
     }
 
     private void EnsureSelectedVisible()
@@ -549,7 +582,7 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
     {
         return this.selectedCategory switch
         {
-            DestinationCategory.Common => !destination.IsHidden
+            DestinationCategory.QuickAccess => !destination.IsHidden
                 && (destination.Kind is WarpDestinationKind.Home or WarpDestinationKind.Previous
                     || destination.IsFavorite),
             DestinationCategory.Bookmarks => destination.Kind == WarpDestinationKind.Bookmark,
@@ -572,7 +605,10 @@ internal sealed class WarpBookmarksMenu : IClickableMenu
                     ? new Color(222, 184, 120) * 0.4f
                     : new Color(120, 78, 48) * 0.12f;
             b.Draw(Game1.staminaRect, bounds, tint);
-            string label = this.translate($"category.{category.ToString().ToLowerInvariant()}");
+            string categoryKey = category == DestinationCategory.QuickAccess
+                ? "quick-access"
+                : category.ToString().ToLowerInvariant();
+            string label = this.translate($"category.{categoryKey}");
             Vector2 size = Game1.smallFont.MeasureString(label);
             b.DrawString(Game1.smallFont, label, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), Game1.textColor);
         }

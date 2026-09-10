@@ -31,6 +31,9 @@ Copy-Item $AssemblyPath $ModPath -Force
 Copy-Item $ManifestPath $ModPath -Force
 Copy-Item (Join-Path $ProjectRoot "i18n") $ModPath -Recurse -Force
 
+# Windows PowerShell 5.1 doesn't always load the assembly containing ZipArchive
+# when only the FileSystem helper assembly is requested.
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 if (Test-Path $ZipPath) {
     Remove-Item $ZipPath -Force
@@ -89,4 +92,4 @@ $Hash = Get-FileHash $ZipPath -Algorithm SHA256
 
 Write-Host "Nexus-ready package: $ZipPath"
 Write-Host "SHA-256: $($Hash.Hash.ToLowerInvariant())"
-Write-Host "Run the checks in docs\WINDOWS_RELEASE_TEST_1.0.0.md before uploading."
+Write-Host "Run the checks in docs\WINDOWS_RELEASE_TEST_$($Manifest.Version).md before uploading."

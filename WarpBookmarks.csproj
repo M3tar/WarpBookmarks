@@ -6,6 +6,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>WarpBookmarks</AssemblyName>
     <RootNamespace>WarpBookmarks</RootNamespace>
+    <Version>1.0.1</Version>
     <ModFolderName>WarpBookmarks</ModFolderName>
     <EnableModDeploy>false</EnableModDeploy>
     <EnableModZip>true</EnableModZip>

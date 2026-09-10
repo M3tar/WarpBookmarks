@@ -10,14 +10,14 @@ $CategorySource = Get-Content (Join-Path $ProjectRoot "Models\DestinationCategor
 $ConfigSource = Get-Content (Join-Path $ProjectRoot "Config\ModConfig.cs") -Raw
 $Failures = @()
 
-if ($CategorySource -notmatch 'Common\s*,\s*All\s*,\s*Bookmarks\s*,\s*Defaults\s*,\s*Hidden') {
+if ($CategorySource -notmatch 'QuickAccess\s*,\s*All\s*,\s*Bookmarks\s*,\s*Defaults\s*,\s*Hidden') {
     $Failures += "The five menu categories aren't in the expected UI order."
 }
 if ($MenuSource -notmatch 'WarpDestinationKind\.Home\s+or\s+WarpDestinationKind\.Previous' -or $MenuSource -notmatch 'destination\.IsFavorite') {
-    $Failures += "The Common view doesn't include home/previous and favorites."
+    $Failures += "The Quick Access view doesn't include home/previous and pinned destinations."
 }
-if ($EntrySource -notmatch 'lastMenuCategory\s*=\s*DestinationCategory\.Common') {
-    $Failures += "The menu session doesn't start from Common."
+if ($EntrySource -notmatch 'lastMenuCategory\s*=\s*DestinationCategory\.QuickAccess') {
+    $Failures += "The menu session doesn't start from Quick Access."
 }
 if ($MenuSource -notmatch 'categoryChanged\(this\.selectedCategory\)') {
     $Failures += "Category changes aren't reported for session memory."

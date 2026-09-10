@@ -16,12 +16,19 @@ internal sealed class BookmarkRenameDialog : IClickableMenu
     private readonly Action<string> save;
     private readonly Action cancel;
     private readonly Func<string, string> translate;
+    private readonly MultilingualTextRenderer textRenderer;
     private readonly Texture2D parchmentTexture;
     private readonly TextBox inputBox;
 
     private Rectangle SaveButton => new(this.xPositionOnScreen + 235, this.yPositionOnScreen + 214, 170, 48);
 
-    public BookmarkRenameDialog(string currentName, Action<string> save, Action cancel, Func<string, string> translate)
+    public BookmarkRenameDialog(
+        string currentName,
+        Action<string> save,
+        Action cancel,
+        Func<string, string> translate,
+        MultilingualTextRenderer textRenderer
+    )
         : base(
             (Game1.uiViewport.Width - DialogWidth) / 2,
             (Game1.uiViewport.Height - DialogHeight) / 2,
@@ -33,9 +40,10 @@ internal sealed class BookmarkRenameDialog : IClickableMenu
         this.save = save;
         this.cancel = cancel;
         this.translate = translate;
+        this.textRenderer = textRenderer;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
         Texture2D textBoxTexture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
-        this.inputBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.inputBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
             X = this.xPositionOnScreen + 70,
             Y = this.yPositionOnScreen + 120,

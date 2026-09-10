@@ -15,10 +15,13 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     private const int DialogHeight = 450;
     private const int DropdownRowHeight = 36;
     private const int VisibleDropdownRows = 7;
+    private const int ActionHorizontalMargin = 70;
+    private const int ActionGap = 16;
     private static readonly Rectangle ParchmentSourceRect = new(0, 0, 320, 180);
 
     private readonly WarpService warpService;
     private readonly Func<string, string> translate;
+    private readonly MultilingualTextRenderer textRenderer;
     private readonly Action returnToMenu;
     private readonly Action<WarpDestination> saveBookmark;
     private readonly Texture2D parchmentTexture;
@@ -46,16 +49,18 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
     private Rectangle ScrollbarTrack => new(this.MapButton.Right - 14, this.MapButton.Bottom + 52, 10, DropdownRowHeight * VisibleDropdownRows - 8);
     private Rectangle XArea => new(this.xBox.X, this.xBox.Y, this.xBox.Width, 48);
     private Rectangle YArea => new(this.yBox.X, this.yBox.Y, this.yBox.Width, 48);
-    private Rectangle PreviewButton => new(this.xPositionOnScreen + 100, this.yPositionOnScreen + 362, 170, 48);
-    private Rectangle SaveButton => new(this.xPositionOnScreen + 315, this.yPositionOnScreen + 362, 170, 48);
-    private Rectangle WarpButton => new(this.xPositionOnScreen + 530, this.yPositionOnScreen + 362, 170, 48);
+    private int ActionButtonWidth => (DialogWidth - ActionHorizontalMargin * 2 - ActionGap * 2) / 3;
+    private Rectangle PreviewButton => this.GetActionButtonBounds(0);
+    private Rectangle SaveButton => this.GetActionButtonBounds(1);
+    private Rectangle WarpButton => this.GetActionButtonBounds(2);
     private TextBox? ActiveTextBox => this.focusedTextBox;
 
     public CoordinateWarpDialog(
         WarpService warpService,
         Func<string, string> translate,
         Action returnToMenu,
-        Action<WarpDestination> saveBookmark
+        Action<WarpDestination> saveBookmark,
+        MultilingualTextRenderer textRenderer
     )
         : base(
             (Game1.uiViewport.Width - DialogWidth) / 2,
@@ -69,9 +74,10 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         this.translate = translate;
         this.returnToMenu = returnToMenu;
         this.saveBookmark = saveBookmark;
+        this.textRenderer = textRenderer;
         this.parchmentTexture = Game1.content.Load<Texture2D>("LooseSprites\\letterBG");
         Texture2D textBoxTexture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
-        this.xBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.xBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
             X = this.xPositionOnScreen + 190,
             Y = this.yPositionOnScreen + 174,
@@ -79,7 +85,7 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
             Text = Game1.player.TilePoint.X.ToString(),
             Selected = true
         };
-        this.yBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.yBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
             X = this.xPositionOnScreen + 454,
             Y = this.yPositionOnScreen + 174,
@@ -87,7 +93,7 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
             Text = Game1.player.TilePoint.Y.ToString(),
             Selected = false
         };
-        this.mapSearchBox = new TextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor)
+        this.mapSearchBox = new MultilingualTextBox(textBoxTexture, null, Game1.smallFont, Game1.textColor, this.textRenderer)
         {
             X = this.xPositionOnScreen + 300,
             Y = this.yPositionOnScreen + 142,
@@ -281,7 +287,8 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         b.DrawString(Game1.smallFont, "Y", new Vector2(this.xPositionOnScreen + 420, this.yBox.Y + 12), Game1.textColor);
         this.yBox.Draw(b);
         b.DrawString(Game1.smallFont, this.translate("coordinate.xy-hint"), new Vector2(this.xPositionOnScreen + 190, this.yPositionOnScreen + 230), Color.DarkSlateGray);
-        b.DrawString(Game1.smallFont, this.statusText, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 294), this.statusColor);
+        string status = this.textRenderer.FitText(this.statusText, DialogWidth - 140, Game1.smallFont);
+        this.textRenderer.DrawString(b, status, new Vector2(this.xPositionOnScreen + 70, this.yPositionOnScreen + 294), this.statusColor, Game1.smallFont);
         this.DrawButton(b, this.PreviewButton, this.translate("coordinate.preview"), enabled: true);
         this.DrawButton(b, this.SaveButton, this.translate("coordinate.save"), enabled: this.previewDestination is not null);
         this.DrawButton(b, this.WarpButton, this.translate("coordinate.warp"), enabled: this.previewDestination is not null);
@@ -421,8 +428,41 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
         string label = this.locationOptions.Count == 0
             ? this.translate("coordinate.no-maps")
             : this.locationOptions[this.selectedLocationIndex].Label;
-        b.DrawString(Game1.smallFont, label, new Vector2(this.MapButton.X + 14, this.MapButton.Y + 11), Game1.textColor);
-        b.DrawString(Game1.smallFont, this.dropdownOpen ? "▲" : "▼", new Vector2(this.MapButton.Right - 34, this.MapButton.Y + 11), Game1.textColor);
+        label = this.textRenderer.FitText(label, this.MapButton.Width - 62, Game1.smallFont);
+        this.textRenderer.DrawString(b, label, new Vector2(this.MapButton.X + 14, this.MapButton.Y + 11), Game1.textColor, Game1.smallFont);
+        this.DrawDropdownCaret(b);
+    }
+
+    private void DrawDropdownCaret(SpriteBatch b)
+    {
+        const int pixelSize = 2;
+        const int rowCount = 4;
+        int centerX = this.MapButton.Right - 31;
+        int topY = this.MapButton.Center.Y - rowCount * pixelSize / 2;
+        this.DrawDropdownCaret(b, centerX + 1, topY + 1, pixelSize, rowCount, new Color(92, 55, 24) * 0.25f);
+        this.DrawDropdownCaret(b, centerX, topY, pixelSize, rowCount, Game1.textColor);
+    }
+
+    private void DrawDropdownCaret(
+        SpriteBatch b,
+        int centerX,
+        int topY,
+        int pixelSize,
+        int rowCount,
+        Color color
+    )
+    {
+        for (int displayRow = 0; displayRow < rowCount; displayRow++)
+        {
+            int triangleRow = this.dropdownOpen ? rowCount - 1 - displayRow : displayRow;
+            int widthInPixels = rowCount * 2 - 1 - triangleRow * 2;
+            int width = widthInPixels * pixelSize;
+            b.Draw(
+                Game1.staminaRect,
+                new Rectangle(centerX - width / 2, topY + displayRow * pixelSize, width, pixelSize),
+                color
+            );
+        }
     }
 
     private void DrawDropdown(SpriteBatch b)
@@ -446,7 +486,8 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
                 b.Draw(Game1.staminaRect, bounds, new Color(196, 135, 70) * 0.55f);
             else if (bounds.Contains(Game1.getMousePosition(true)))
                 b.Draw(Game1.staminaRect, bounds, new Color(222, 184, 120) * 0.4f);
-            b.DrawString(Game1.smallFont, this.locationOptions[optionIndex].Label, new Vector2(bounds.X + 12, bounds.Y + 7), Game1.textColor);
+            string label = this.textRenderer.FitText(this.locationOptions[optionIndex].Label, bounds.Width - 24, Game1.smallFont);
+            this.textRenderer.DrawString(b, label, new Vector2(bounds.X + 12, bounds.Y + 7), Game1.textColor, Game1.smallFont);
         }
         if (this.filteredLocationIndices.Count > VisibleDropdownRows)
         {
@@ -487,8 +528,21 @@ internal sealed class CoordinateWarpDialog : IClickableMenu
                 ? Color.Wheat
                 : Color.White;
         IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, tint);
-        Vector2 size = Game1.smallFont.MeasureString(label);
-        b.DrawString(Game1.smallFont, label, new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2), enabled ? Game1.textColor : Color.DarkGray);
+        string fittedLabel = this.textRenderer.FitText(label, bounds.Width - 24, Game1.smallFont);
+        Vector2 size = this.textRenderer.MeasureString(fittedLabel, Game1.smallFont);
+        this.textRenderer.DrawString(
+            b,
+            fittedLabel,
+            new Vector2(bounds.Center.X - size.X / 2, bounds.Center.Y - size.Y / 2),
+            enabled ? Game1.textColor : Color.DarkGray,
+            Game1.smallFont
+        );
+    }
+
+    private Rectangle GetActionButtonBounds(int column)
+    {
+        int x = this.xPositionOnScreen + ActionHorizontalMargin + column * (this.ActionButtonWidth + ActionGap);
+        return new Rectangle(x, this.yPositionOnScreen + 362, this.ActionButtonWidth, 48);
     }
 
     private void ReturnToMenu()

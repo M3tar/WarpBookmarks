@@ -21,12 +21,12 @@
 
   <g clip-path="url(#frame)">
     <rect width="1200" height="480" fill="#2b160e"/>
-    <image href="../screenshots/personal-bookmarks.jpg" x="430" y="0" width="770" height="480" preserveAspectRatio="xMidYMid slice"/>
+    <image href="screenshots/v1.0.0/zh-cn/personal-bookmarks.jpg" x="430" y="0" width="770" height="480" preserveAspectRatio="xMidYMid slice"/>
     <rect x="390" width="810" height="480" fill="url(#scene-shade)"/>
 
     <g id="screenshot-proof">
       <rect x="501" y="31" width="670" height="418" rx="23" fill="#1c0f0b" opacity=".62"/>
-      <image href="../screenshots/ginger-island-locked-destinations.jpg" x="512" y="42" width="648" height="396" preserveAspectRatio="xMidYMid slice" clip-path="url(#shot)"/>
+      <image href="screenshots/v1.0.0/zh-cn/ginger-island-locked-destinations.jpg" x="512" y="42" width="648" height="396" preserveAspectRatio="xMidYMid slice" clip-path="url(#shot)"/>
       <rect x="512" y="42" width="648" height="396" rx="18" fill="none" stroke="#f6d58e" stroke-width="3"/>
       <g transform="translate(1082 58)">
         <path d="M0 0h50v76l-25-14-25 14z" fill="#b84b32"/>

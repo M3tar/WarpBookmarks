@@ -49,11 +49,24 @@ internal sealed class DestinationCatalog
             {
                 Id = bookmark.Id,
                 Name = bookmark.Name,
-                Location = bookmark.Location,
+                Location = GetLocalizedLocation(bookmark.Location),
                 Kind = WarpDestinationKind.Bookmark,
                 IsFavorite = bookmark.IsFavorite
             }));
         destinations.AddRange(DefaultLocationProvider.GetHidden(data, this.translate));
         return destinations;
+    }
+
+    private static LocationReference GetLocalizedLocation(LocationReference stored)
+    {
+        GameLocation? currentLocation = Game1.getLocationFromName(stored.LocationName);
+        return new LocationReference
+        {
+            LocationName = stored.LocationName,
+            DisplayName = currentLocation?.DisplayName ?? stored.DisplayName,
+            TileX = stored.TileX,
+            TileY = stored.TileY,
+            FacingDirection = stored.FacingDirection
+        };
     }
 }
