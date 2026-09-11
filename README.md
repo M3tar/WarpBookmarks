@@ -152,7 +152,7 @@ Warp Bookmarks 已在 Windows 11、Stardew Valley 1.6.15、SMAPI 4.5.2 环境完
 
 ## 项目状态
 
-`1.0.1` 最终安装包与中英文实机截图已经完成仓库审核，等待发布前的最终差异确认。发布后可从 [GitHub Releases](https://github.com/M3tar/WarpBookmarks/releases/tag/v1.0.1) 或 [Nexus Mods（Mod ID 50310）](https://www.nexusmods.com/stardewvalley/mods/50310) 获取。Windows 验证步骤见 [1.0.1 发布测试](./docs/WINDOWS_RELEASE_TEST_1.0.1.md)。
+`1.0.1` 已正式发布。最终安装包与中英文实机截图均已完成审核和 Windows 实机验证；干净安装后，已有书签与常用状态可以保留，SMAPI 未出现本 Mod 的红色错误。现在可从 [GitHub Releases](https://github.com/M3tar/WarpBookmarks/releases/tag/v1.0.1) 或 [Nexus Mods（Mod ID 50310）](https://www.nexusmods.com/stardewvalley/mods/50310) 下载。Windows 验证记录见 [1.0.1 发布测试](./docs/WINDOWS_RELEASE_TEST_1.0.1.md)。
 
 开发与设计资料：
 
